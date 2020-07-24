@@ -54,6 +54,7 @@ Theorem app_Add: forall (a:T) l la m, Add a l la -> Add a (l++m) (la++m). Proof.
 Theorem Perm_app_swap: forall l m, Perm (l++m) (m++l). Proof. induction l; simpl; intros. rewrite app_nil_r; auto. apply Perm_Add with a (l++m) (m++l); auto. induction m; simpl; auto. Qed.
 Theorem Perm_app: forall l1 m1 l2 m2, Perm l1 m1 -> Perm l2 m2 -> Perm (l1++l2) (m1++m2). Proof. intros. induction H; simpl; auto. apply Perm_Add with a (l++l2) (m++m2); auto; apply app_Add; auto. Qed.
 Theorem Perm_app_rev: forall l1 m1 l2 m2, Perm l1 m1 -> Perm (l1++l2) (m1++m2) -> Perm l2 m2. Proof. intros. induction H; simpl in H0; auto. apply IHPerm. apply Perm_Add_inv with a (la++l2) (ma++m2); auto; apply app_Add; auto. Qed.
+Theorem NoDup_incl_length: forall  (l m:list T), NoDup l -> incl l m ->length l<=length m. Proof. induction l; simpl; intros. apply le_O_n. inversion H. subst x l0. destruct (Add_inv a m) as [m' H5]. apply H0; auto. rewrite Add_length with T a m' m; auto. apply le_n_S. apply IHl; auto. intros x Hx. apply Add_in with (x:=x) in H5. cut (In x m); intros. apply H5 in H1. destruct H1; auto. subst x; contradiction. apply H0; auto. Qed.
 Theorem NoDup_incl_Perm : forall l m, incl l m -> NoDup l -> length m <= length l -> Perm l m. Proof. induction l; intros. destruct m; auto. contradict H1. apply lt_not_le. simpl. apply le_n_S. apply le_O_n. destruct (Add_inv a m) as [m' H2]. apply H. left; auto. apply Perm_Add with a l m'; auto. apply IHl; auto. intros y H3. apply Add_in with (x:=y) in H2. cut (In y m); intros. apply H2 in H4. destruct H4; auto. subst y. inversion H0; contradiction. apply H. right; auto. inversion H0; auto. apply Add_length in H2. rewrite H2 in H1. apply le_S_n; auto. Qed.
 Theorem NoDup_incl_each_Perm: forall l m, NoDup l -> NoDup m -> incl l m -> incl m l -> Perm l m. Proof. induction l;intros; auto. destruct m; auto. absurd (In t nil); auto. inversion H. subst x l0. destruct (Add_inv a m) as [m' H3]; auto. apply (NoDup_Add H3) in H0. destruct H0. apply Perm_Add with a l m'; auto. apply IHl; auto. intros x Hx. apply Add_in with (x:=x) in H3. cut (In x m); intros. apply H3 in H7. destruct H7; auto. subst x; contradiction. auto. intros x Hx. cut (In x (a::l)); intros. destruct H7; auto. subst x; contradiction. apply H2. apply Add_in with (x:=x) in H3; auto. apply H3; auto. Qed.
 
@@ -176,7 +177,7 @@ Hint Resolve Add_insert Add_dual Perm_Add_inv Perm_trans Perm'__Perm.
 Hint Resolve Perm_rev app_Add Perm_app_swap Perm_app Perm_app_rev NoDup_incl_Perm NoDup_incl_each_Perm count_occ_Add_eq count_occ_Add_neq Perm__count_occ count_occ__Perm.
 Hint Resolve partition_Perm filter_app_Perm fold_right_Perm filter_Add1 filter_Add2 filter_Perm filter_Forall filter_None filter_ord filter_and.
 Hint Resolve filter_app filter_NoDup filter_equiv dec2b_true dec2b_false.
-Hint Resolve NoDup_map_inv NoDup_map NoDup_flat_map map_Add Perm_map Perm_map_inv filter_map flat_map_app Perm_flat_map.
+Hint Resolve NoDup_incl_length NoDup_map_inv NoDup_map NoDup_flat_map map_Add Perm_map Perm_map_inv filter_map flat_map_app Perm_flat_map.
 Hint Resolve count_occ_Add_eq count_occ_Add_neq Perm__count_occ count_occ__Perm nodup_Add1 nodup_Add2 nodup_Perm nodup_incl_min ForallR_Add_rev ForallR_Add ForallR_Perm NoRDup_Add_rev NoRDup_Add NoRDup_Perm.
 Hint Resolve Sorted_cons_rev Sorted_min_cons Sorted_Perm_uniq Sorted_app.
 
