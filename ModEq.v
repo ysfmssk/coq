@@ -9,6 +9,7 @@ Set Implicit Arguments.
 
 Fixpoint pow n a:= match a with |0 => 1 |S a' => n * pow n a' end.
 Theorem pow0: forall n, pow n 0 = 1. Proof. simpl; auto. Qed.
+Theorem pow0n: forall n, n<>0->pow 0 n=0. Proof. intros. destruct n. contradict H; auto. auto. Qed.
 Theorem powS: forall n a, pow n (S a) = n * pow n a. Proof. intros; simpl; auto. Qed.
 Theorem pow_plus: forall n a b, pow n (a+b) = pow n a* pow n b. Proof. induction a; simpl; intros; auto. rewrite <- mult_assoc; f_equal; auto. Qed.
 Theorem pow_mult: forall p a b, pow p (a*b) = pow (pow p b) a. Proof. induction a; intros; simpl; auto. rewrite pow_plus. f_equal; auto. Qed.
@@ -19,7 +20,7 @@ Theorem fold_mult_app: forall a l m, fold_right mult a (l++m) = fold_right mult 
 Theorem fact_fold: forall n, fact n = fold_right mult 1 (seq 1 n). Proof. induction n. simpl; auto. rewrite seqS. rewrite fold_mult_app. simpl. rewrite mult_1_r. rewrite <- IHn. rewrite <- mult_n_Sm. rewrite plus_comm. f_equal; auto. apply mult_comm. Qed.
 Lemma fact_nz: forall n, fact n<>0. Proof. induction n; simpl; auto. contradict IHn. destruct (fact n); auto. simpl in IHn. inversion IHn. Qed.
 
-Hint Resolve pow0 powS pow_plus pow_mult pow_mult2 pow_nz seqS fold_mult_app fact_fold fact_nz.
+Hint Resolve pow0 pow0n powS pow_plus pow_mult pow_mult2 pow_nz seqS fold_mult_app fact_fold fact_nz.
 Hint Resolve le_plus_l le_plus_r le_n_S le_S_n le_not_lt lt_not_le lt_le_weak plus_assoc plus_comm mult_assoc mult_comm mult_plus_distr_r mult_plus_distr_l seq_NoDup.
 Definition nat_eq_dec: forall x y:nat, {x=y}+{x<>y}. induction x; intros; destruct y. left; auto. right; auto. right; auto. destruct (IHx y); [subst y; left|right]; auto. Defined.
 
@@ -98,8 +99,12 @@ Definition findP: forall P n (P_dec:forall x, x<n->{P x}+{~P x}), {m|P m & m < n
 Theorem PnumN_unique: forall P n m m', PnumN P n m -> PnumN P n m' -> m=m'. Proof. intros. revert m' H0. induction H; intros. inversion H0; auto. inversion H1; try contradiction. f_equal; auto. inversion H1; try contradiction; auto. Qed.
 Theorem PnumN_incr: forall P n m n' m', PnumN P n m -> PnumN P n' m' -> n<=n' -> m<=m'. Proof. intros. revert m m' H H0. induction H1; intros. replace m' with m; auto. apply PnumN_unique with P n; auto. inversion H0. subst n0 m'. auto. auto. Qed.
 Lemma PnumN_lt: forall P Q n a b, PnumN P n a -> PnumN Q n b -> a < b -> exists x, x<n /\ ~P x /\ Q x. Proof. induction n; intros. inversion H0. subst b. inversion H1. inversion H; inversion H0. subst n0 a n1 b. destruct (IHn m m0) as [x [Ha [Hb Hc]]]; auto. exists x; auto. subst n0 a n1 b. destruct (IHn m m0) as [x [Ha [Hb Hc]]]; auto. exists x; auto. exists n; auto. subst n0 m n1 m0. destruct (IHn a b) as [x [Ha [Hb Hc]]]; auto. exists x; auto. Qed.
+Lemma PnumN_ex: forall P n m, PnumN P n m -> m<>0 <-> exists x, x<n /\ P x. Proof. intros. induction H. split; intros. contradict H; auto. destruct H as [x [H1 H2]]. inversion H1. split; intros. exists n; auto. discriminate. split; intros. apply IHPnumN in H1. destruct H1 as [x [H1 H2]]. exists x; auto. apply IHPnumN. destruct H1 as [x [H1 H2]]. exists x. inversion H1; auto. subst x; contradiction. Qed.
+Lemma PnumN_or: forall P Q n a b c, PnumN P n a -> PnumN Q n b -> PnumN (fun n =>P n\/Q n) n c -> c<=a+b. Proof. induction n; intros. inversion H; inversion H0; inversion H1; auto. inversion H; inversion H0; inversion H1; simpl; auto. rewrite <- plus_n_Sm; auto. contradict H12; auto. rewrite <- plus_n_Sm; auto. contradict H12; auto. destruct H12; contradiction. Qed.
+Lemma PnumN_equiv: forall P Q n m, (forall x, x<n-> P x<->Q x) -> PnumN P n m -> PnumN Q n m. Proof. intros. induction H0; auto. apply PnumN_P; auto. apply H; auto. apply PnumN_NP; auto. contradict H1; apply H; auto. Qed.
+Lemma PnumN_one: forall (P:nat->Prop) n x, x<n -> P x -> (forall y, y<n -> P y -> y=x) -> PnumN P n 1. Proof. intros P n x H. induction H; simpl; intros. apply PnumN_P; auto. cut (forall y, y<x->~P y). intros. clear H0 H. induction x; auto. apply PnumN_NP; auto. intros. intros C. assert (y=x); auto. contradict H1; subst y; auto. apply PnumN_NP; auto. contradict H. apply H1 in H; auto. subst x; auto. Qed.
 Theorem Pnum_unique: forall P n m, Pnum P n -> Pnum P m -> n=m. Proof. intros. inversion H; inversion H0. apply PnumN_unique with P (max m0 m1). apply H1. apply Nat.le_max_l. apply H2. apply Nat.le_max_r. Qed.
-Hint Resolve PnumN_unique PnumN_incr PnumN_lt Pnum_unique.
+Hint Resolve PnumN_unique PnumN_incr PnumN_lt PnumN_ex PnumN_or PnumN_equiv PnumN_one Pnum_unique.
 
 
 Definition GCD (g x y:nat): Prop := MaxP (fun d=>Divide d x/\Divide d y) g.
@@ -237,5 +242,6 @@ Theorem Totient_sum: forall n, fold_right plus 0 (map totient (filter (dec2b (fu
 
 Theorem ModInv: forall n a, a<>0 -> Coprime n a -> exists b, ModEq n (a*b) 1 /\ forall b', ModEq n (a*b') 1 -> ModEq n b b'. Proof. intros. destruct (bezour H (Coprime_sym H0)) as [x [y Hx]]; auto. exists x. split. rewrite mult_comm. rewrite Hx; auto. intros. apply ModEq_div with a; auto. rewrite mult_comm. rewrite Hx. apply ModEq_trans with 1; auto. Qed.
 Definition invMod: forall n a, {b|ModEq n (a*b) 1}+{~Coprime n a}. intros. destruct (Coprime_dec n a); [left|right]; auto. destruct (nat_eq_dec a 0). subst a. exists 0. replace n with 1; auto. inversion c. apply le_antisym. destruct n; auto. apply H0; auto. apply GCD_sym in c. destruct (bezour n0 c) as [x [y H]]. exists x. rewrite mult_comm. rewrite H. auto. Defined.
+Theorem ModEq_m1_sq: forall n, ModEq (S n) (n*n) 1. Proof. intros. apply ModEq_minus with (S(n+n)). replace (S (n+n)+n*n) with (S n*S n). apply ModEq_trans with 0. apply ModEq_sym; apply multN_Divide. replace (S (n+n)+1) with (2*S n); auto. apply multN_Divide. simpl. repeat rewrite <- plus_n_Sm. f_equal. f_equal. rewrite plus_assoc; auto. simpl. f_equal. rewrite <- plus_assoc. f_equal. rewrite mult_comm. simpl. auto. Qed.
 
-Hint Resolve Totient_mult Totient_sum ModInv.
+Hint Resolve Totient_mult Totient_sum ModInv ModEq_m1_sq.
