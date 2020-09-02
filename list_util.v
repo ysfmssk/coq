@@ -57,6 +57,7 @@ Theorem Perm_app_rev: forall l1 m1 l2 m2, Perm l1 m1 -> Perm (l1++l2) (m1++m2) -
 Theorem NoDup_incl_length: forall  (l m:list T), NoDup l -> incl l m ->length l<=length m. Proof. induction l; simpl; intros. apply le_O_n. inversion H. subst x l0. destruct (Add_inv a m) as [m' H5]. apply H0; auto. rewrite Add_length with T a m' m; auto. apply le_n_S. apply IHl; auto. intros x Hx. apply Add_in with (x:=x) in H5. cut (In x m); intros. apply H5 in H1. destruct H1; auto. subst x; contradiction. apply H0; auto. Qed.
 Theorem NoDup_incl_Perm : forall l m, incl l m -> NoDup l -> length m <= length l -> Perm l m. Proof. induction l; intros. destruct m; auto. contradict H1. apply lt_not_le. simpl. apply le_n_S. apply le_O_n. destruct (Add_inv a m) as [m' H2]. apply H. left; auto. apply Perm_Add with a l m'; auto. apply IHl; auto. intros y H3. apply Add_in with (x:=y) in H2. cut (In y m); intros. apply H2 in H4. destruct H4; auto. subst y. inversion H0; contradiction. apply H. right; auto. inversion H0; auto. apply Add_length in H2. rewrite H2 in H1. apply le_S_n; auto. Qed.
 Theorem NoDup_incl_each_Perm: forall l m, NoDup l -> NoDup m -> incl l m -> incl m l -> Perm l m. Proof. induction l;intros; auto. destruct m; auto. absurd (In t nil); auto. inversion H. subst x l0. destruct (Add_inv a m) as [m' H3]; auto. apply (NoDup_Add H3) in H0. destruct H0. apply Perm_Add with a l m'; auto. apply IHl; auto. intros x Hx. apply Add_in with (x:=x) in H3. cut (In x m); intros. apply H3 in H7. destruct H7; auto. subst x; contradiction. auto. intros x Hx. cut (In x (a::l)); intros. destruct H7; auto. subst x; contradiction. apply H2. apply Add_in with (x:=x) in H3; auto. apply H3; auto. Qed.
+Theorem NoDup_repeat: forall (a:T) n, NoDup (repeat a n) <-> n<=1. Proof. intros; split; intros. destruct n; auto. destruct n; auto. simpl in H. inversion H. contradict H2; auto. inversion H; simpl. apply NoDup_cons; auto. apply NoDup_nil. inversion H1. simpl. apply NoDup_nil. Qed.
 
 Theorem partition_Perm: forall f l, let (la,lb) := partition f l in Perm l (la++lb). Proof. induction l; simpl; intros; auto. destruct (f a); destruct (partition f l); simpl. apply Perm_Add with a l (l0++l1); auto. apply Perm_Add with a l (l0++l1); auto. clear IHl. induction l0; simpl; auto. Qed.
 Theorem filter_app_Perm: forall f l, Perm l (filter f l++filter (fun x=>negb (f x)) l). Proof. induction l; simpl; auto. destruct (f a); simpl; eapply Perm_Add with (a:=a); eauto. generalize (filter f l) as m. induction m; simpl; auto. Qed.
@@ -171,6 +172,8 @@ Theorem Perm_map_inv: forall (f:T->U) l m, (forall x y, f x=f y -> x=y) -> Perm 
 Theorem filter_map: forall (m:T->U) (f:U->bool) l, filter f (map m l) = map m (filter (fun x=>f (m x)) l). Proof. induction l; simpl; auto. destruct (f (m a)); simpl; auto. f_equal; auto. Qed.
 Theorem flat_map_app: forall (f:T->list U) l m, flat_map f (l++m) = flat_map f l ++flat_map f m. Proof. induction l; intros; simpl; auto. rewrite <- app_assoc. f_equal; auto. Qed.
 Theorem Perm_flat_map: forall (f:T->list U) l m, Perm l m -> Perm (flat_map f l) (flat_map f m). Proof. induction l; intros. destruct m; simpl; auto. absurd (In t nil); auto. apply Perm_In with (t::m). apply Perm_sym; auto. left; auto. simpl. destruct (Add_inv a m) as [m' H1]. apply Perm_In with (a::l); auto. left; auto. destruct (Add_split H1) as [m1 [m2 [H2 H3]]]. subst m m'. rewrite flat_map_app. simpl. apply Perm_trans with (f a++flat_map f m1++flat_map f m2). apply Perm_app; auto. apply Perm_refl. rewrite <- flat_map_app. apply IHl. apply Perm_Add_inv with a (a::l) (m1++a::m2); auto. repeat rewrite app_assoc. apply Perm_app; auto. apply Perm_app_swap. apply Perm_refl. Qed.
+Theorem map_repeat: forall (f:T->U) a n, map f (repeat a n) = repeat (f a) n. Proof. induction n; simpl; auto. f_equal; auto. Qed.
+
 End ListType2.
 
 Hint Constructors Swap Perm Add Sorted ForallR NoRDup.
@@ -181,7 +184,7 @@ Hint Resolve Add_insert Add_dual Perm_Add_inv Perm_trans Perm'__Perm.
 Hint Resolve Perm_rev app_Add Perm_app_swap Perm_app Perm_app_rev NoDup_incl_Perm NoDup_incl_each_Perm count_occ_Add_eq count_occ_Add_neq Perm__count_occ count_occ__Perm.
 Hint Resolve partition_Perm filter_app_Perm fold_right_Perm filter_Add1 filter_Add2 filter_Perm filter_Forall filter_None filter_ord filter_and.
 Hint Resolve filter_app filter_NoDup filter_equiv dec2b_true dec2b_false Rpair_list.
-Hint Resolve NoDup_incl_length NoDup_map_inv NoDup_map NoDup_flat_map map_Add Perm_map Perm_map_inv filter_map flat_map_app Perm_flat_map.
+Hint Resolve NoDup_incl_length NoDup_map_inv NoDup_map NoDup_flat_map NoDup_repeat map_Add Perm_map Perm_map_inv filter_map flat_map_app Perm_flat_map map_repeat.
 Hint Resolve count_occ_Add_eq count_occ_Add_neq Perm__count_occ count_occ__Perm nodup_Add1 nodup_Add2 nodup_Perm nodup_incl_min ForallR_Add_rev ForallR_Add ForallR_Perm NoRDup_Add_rev NoRDup_Add NoRDup_Perm.
 Hint Resolve Sorted_cons_rev Sorted_min_cons Sorted_Perm_uniq Sorted_app.
 
