@@ -80,8 +80,6 @@ Definition Forall_dec: forall (P:T->Prop) l (P_dec:forall x, In x l->{P x}+{~P x
 Definition Exists_dec: forall (P:T->Prop) l (P_dec:forall x, In x l->{P x}+{~P x}), {Exists P l}+{~Exists P l}. induction l; intros. right; intros C. inversion C. destruct (P_dec a); auto. destruct IHl; auto. right. intros C. inversion C; contradiction. Defined.
 Definition findP : forall (P:T->Prop) (l:list T) (P_dec:forall x, In x l->{P x}+{~P x}), {x|In x l & P x}+{forall x, In x l ->~P x}. induction l; intros. right. intros. destruct H. destruct (P_dec a); auto. left; auto. exists a; auto. destruct IHl as [[x H]|H]; [|left; exists x|right]; auto. intros. destruct H0; auto. subst a; auto. Defined.
 
-Definition splits: forall l: list T, {pl| forall p, l=fst p++snd p <-> In p pl}. induction l as [|a l]. exists ((nil,nil)::nil). intros; split; intros. destruct p. simpl in H. destruct l. destruct l0. auto. inversion H. inversion H. destruct H. subst p. auto. destruct H. destruct IHl as [pl H1]. exists ((nil, a::l)::map (fun p=> (a::fst p, snd p)) pl). intros. split; intros. destruct p as [t u]. simpl in H. destruct t. left. simpl in H. subst u. auto. inversion H. subst a l. right. apply in_map_iff. exists (t0,u). split; auto. apply H1; auto. destruct H. subst p. auto. apply in_map_iff in H. destruct H as [[t u] [H2 H3]]. subst p. simpl. f_equal. apply H1 in H3. subst l; auto. Defined.
-
 Theorem Rpair_list: forall (R:relation T) l, NoDup l -> (forall x, In x l->~R x x) -> (forall x, In x l->exists y, R x y/\In y l/\forall z,In z l->R x z->z=y) -> (forall x y, In x l->In y l->R x y->R y x) -> exists m, Perm l (map fst m++map snd m) /\ Forall (fun p=>R (fst p) (snd p)) m. Proof. intros R l. apply (Fix (well_founded_ltof (list T) (length (A:=T)))) with (P:=fun l=>NoDup l ->(forall x, In x l -> ~ R x x) ->(forall x, In x l -> exists y : T, R x y /\ In y l/\forall z,In z l->R x z->z=y) ->(forall x y, In x l -> In y l -> R x y -> R y x) -> exists m, Perm l (map fst m ++ map snd m) /\ Forall (fun p : T * T => R (fst p) (snd p)) m). clear l. intros l IH. intros. destruct l as [|a l]. exists nil; simpl; auto. destruct (H1 a) as [b [H4 [H5 H6]]]; auto. destruct H5. subst b; absurd (R a a); auto. destruct (Add_inv b l H3) as [l' H5]. inversion H. subst x l0.
   destruct (IH l') as [m [H11 H12]]; intros; auto. unfold ltof. apply Add_length in H5. simpl. rewrite H5; auto. apply NoDup_Add in H5. apply H5 in H10. destruct H10; auto. apply H0. right. apply Add_in with (x:=x) in H5. apply H5; auto. assert (In x l). apply (Add_in) with (x:=x) in H5. apply H5; auto.  destruct (H1 x) as [y [H11 [H12 H13]]]; auto. exists y; split; [|split]; auto. destruct H12. subst y. absurd (In b l'). apply NoDup_Add in H5. apply H5 in H10. destruct H10; auto. replace b with x; auto. apply Add_in with (x:=y) in H5. apply H5 in H12. destruct H12; auto. subst y. contradict H9. replace a with x; auto. destruct (H1 b) as [z [Ha [Hb Hc]]]; auto. rewrite Hc; auto. intros; apply H13; auto. right. apply Add_in with (x:=z) in H5. apply H5; auto. apply H2; auto; right. apply Add_in with (x:=x) in H5. apply H5; auto. apply Add_in with (x:=y) in H5. apply H5; auto. 
   exists ((a,b)::m). split; auto. apply Perm_Add with a l (map fst m++b::map snd m); simpl; auto. apply Perm_Add with b l' (map fst m++map snd m); auto. generalize (map fst m) as n. induction n; simpl; auto. Qed.
@@ -159,7 +157,7 @@ Definition merge_sort: forall l, {m|Sorted m & Perm l m}. apply (Fix (well_found
 End ListType.
 
 Section ListType2.
-Variable T U:Type.
+Variable T U V:Type.
 
 Hint Constructors NoDup Perm Add.
 Theorem NoDup_map_inv: forall (f:T->U) l, NoDup (map f l) -> NoDup l. Proof. induction l; simpl; intros; auto. inversion H. apply NoDup_cons; auto. contradict H2. apply in_map_iff. exists a; auto.  Qed.
@@ -174,7 +172,15 @@ Theorem flat_map_app: forall (f:T->list U) l m, flat_map f (l++m) = flat_map f l
 Theorem Perm_flat_map: forall (f:T->list U) l m, Perm l m -> Perm (flat_map f l) (flat_map f m). Proof. induction l; intros. destruct m; simpl; auto. absurd (In t nil); auto. apply Perm_In with (t::m). apply Perm_sym; auto. left; auto. simpl. destruct (Add_inv a m) as [m' H1]. apply Perm_In with (a::l); auto. left; auto. destruct (Add_split H1) as [m1 [m2 [H2 H3]]]. subst m m'. rewrite flat_map_app. simpl. apply Perm_trans with (f a++flat_map f m1++flat_map f m2). apply Perm_app; auto. apply Perm_refl. rewrite <- flat_map_app. apply IHl. apply Perm_Add_inv with a (a::l) (m1++a::m2); auto. repeat rewrite app_assoc. apply Perm_app; auto. apply Perm_app_swap. apply Perm_refl. Qed.
 Theorem map_repeat: forall (f:T->U) a n, map f (repeat a n) = repeat (f a) n. Proof. induction n; simpl; auto. f_equal; auto. Qed.
 
+Definition all_pair (f:T->U->V) l m : list V := fold_right (fun x=>app (map (f x) m)) nil l.
+Theorem all_pair_spec1: forall f l m x y, In x l -> In y m -> In (f x y) (all_pair f l m). Proof. induction l; simpl; intros; auto. apply in_or_app. destruct H; [left|right]; auto. subst x. apply in_map_iff. exists y; auto. Qed.
+Theorem all_pair_spec2: forall f l m z, In z (all_pair f l m) -> exists x y, In x l /\ In y m /\ z=f x y. Proof. induction l; simpl; intros. destruct H. apply in_app_or in H. destruct H. apply in_map_iff in H. destruct H as [y [H1 H2]]. subst z. exists a. exists y; auto. destruct (IHl m z H) as [x [y [H1 [H2 H3]]]]. subst z. exists x. exists y; auto. Qed.
+Definition maxf: forall (f:T->nat) l, {x|In x l & forall y, In y l->f y<=f x}+{l=nil}. induction l; [right|left]; auto. destruct IHl as [[x H1 H2]|H1]. destruct (le_lt_dec (f a) (f x)). exists x; auto. right; auto. intros. destruct H; auto. subst y; auto. exists a. left; auto. intros. destruct H; auto. subst y; auto. apply le_trans with (f x); auto. apply lt_le_weak; auto. subst l. exists a. left; auto. intros. destruct H. subst a; auto. destruct H. Defined.
+Definition minf: forall (f:T->nat) l, {x|In x l & forall y, In y l->f x<=f y}+{l=nil}. induction l; [right|left]; auto. destruct IHl as [[x H1 H2]|H1]. destruct (le_lt_dec (f a) (f x)). exists a; auto. left; auto. intros. destruct H; auto. subst y; auto. apply le_trans with (f x); auto. exists x.  right; auto. intros. destruct H; auto. subst y; auto. apply lt_le_weak; auto. subst l. exists a. left; auto. intros. destruct H. subst a; auto. destruct H. Defined.
+ 
 End ListType2.
+
+Definition splits: forall {T:Type} (l: list T), {pl| forall p, l=fst p++snd p <-> In p pl & NoDup pl}. induction l as [|a l]. exists ((nil,nil)::nil). intros; split; intros. destruct p. simpl in H. destruct l. destruct l0. left; auto. inversion H. inversion H. destruct H. subst p. auto. destruct H. apply NoDup_cons; auto. apply NoDup_nil. destruct IHl as [pl H1 Hn]. exists ((nil, a::l)::map (fun p=> (a::fst p, snd p)) pl). intros; split; intros. destruct p as [t u]. simpl in H. destruct t. left. simpl in H. subst u. auto. inversion H. subst a l. right. apply in_map_iff. exists (t0,u). split; auto. apply H1; auto. destruct H. subst p. auto. apply in_map_iff in H. destruct H as [[t u] [H2 H3]]. subst p. simpl. f_equal. apply H1 in H3. subst l; auto. apply NoDup_cons. intros C. apply in_map_iff in C. destruct C as [[x y] [H2 H3]]. inversion H2. apply NoDup_map; auto. intros. destruct x. destruct y. simpl in H2. inversion H2. auto. Defined.
 
 Hint Constructors Swap Perm Add Sorted ForallR NoRDup.
 Hint Resolve in_eq in_cons Swap_sym Perm'_sym Perm'_refl Perm'_trans Swap_Perm'.
@@ -187,5 +193,5 @@ Hint Resolve filter_app filter_NoDup filter_equiv dec2b_true dec2b_false Rpair_l
 Hint Resolve NoDup_incl_length NoDup_map_inv NoDup_map NoDup_flat_map NoDup_repeat map_Add Perm_map Perm_map_inv filter_map flat_map_app Perm_flat_map map_repeat.
 Hint Resolve count_occ_Add_eq count_occ_Add_neq Perm__count_occ count_occ__Perm nodup_Add1 nodup_Add2 nodup_Perm nodup_incl_min ForallR_Add_rev ForallR_Add ForallR_Perm NoRDup_Add_rev NoRDup_Add NoRDup_Perm.
 Hint Resolve Sorted_cons_rev Sorted_min_cons Sorted_Perm_uniq Sorted_app.
-
+Hint Resolve all_pair_spec1 all_pair_spec2.
 
