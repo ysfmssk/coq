@@ -18,7 +18,10 @@ ModEq.vo:	ModEq.v list_util.vo
 LP.vo:	LP.v list_util.vo
 	coqc LP.v
 
-RegExp.vo:	RegExp.v list_util.vo
+FSA.vo:	RegExp.v list_util.vo
+	coqc FSA.v
+
+RegExp.vo:	RegExp.v FSA.vo list_util.vo
 	coqc RegExp.v
 
 .PHONY: clean
