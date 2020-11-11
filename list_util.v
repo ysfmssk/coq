@@ -102,11 +102,23 @@ Theorem nodup_Perm: forall l m, Perm l m -> Perm (nodup T_eq_dec l) (nodup T_eq_
 Theorem nodup_incl_min: forall l m, incl l m -> length (nodup T_eq_dec l) <= length m. Proof. induction l; simpl; intros; auto. apply le_O_n. destruct (in_dec T_eq_dec a l). apply IHl. intros y H0. apply H; auto. destruct (add_inv a m) as [[m' H1]|H1]. rewrite Add_length with T a m' m; auto.  simpl. apply le_n_S. apply IHl. intros y Hy. apply Add_in with (x:=y) in H1. cut (In y m). intros. apply H1 in H0. destruct H0; auto. subst y; contradiction. apply H. auto. contradict H1. apply H; auto. Qed.
 
 Theorem remove_length: forall l a, length (remove T_eq_dec a l)<=length l. Proof. induction l; simpl; intros; auto. destruct (T_eq_dec a0 a); auto. simpl. apply le_n_S; auto. Qed.
+Theorem remove_length2: forall l (a:T), In a l -> length (remove T_eq_dec a l)<length l. Proof. intros l a. induction l; simpl; intros. destruct H. destruct H. subst a0. destruct (T_eq_dec a a). apply le_n_S. apply remove_length. contradict n; auto. destruct (T_eq_dec a a0). subst a0. apply le_S; auto. apply IHl; auto. simpl. apply le_n_S; auto. apply IHl; auto. Qed.
 Theorem remove_notIn: forall l a, ~In a l -> remove T_eq_dec a l=l. Proof. induction l; simpl; intros; auto. destruct (T_eq_dec a0 a); auto. contradict H; subst a0; auto. f_equal. apply IHl. contradict H; auto. Qed.
 Theorem remove_Add: forall a l m, Add a l m ->remove T_eq_dec a l = remove T_eq_dec a m. Proof. intros. induction H; simpl. destruct (T_eq_dec a a); auto. contradict n; auto. destruct (T_eq_dec a x); auto; f_equal; auto. Qed.
 Definition count_list: forall l, {pl| Perm l (fold_right (fun p=>app (repeat (fst p) (snd p))) nil pl) /\ NoDup (map fst pl) /\ Forall (fun x=>x<>0) (map snd pl)}. apply (Fix (well_founded_ltof (list T) (length (A:=T)))). intros l IH. destruct l. exists nil; simpl; auto. split; auto. split; auto. apply NoDup_nil. destruct (IH (remove T_eq_dec t l)) as [m [H1 [H2 H3]]]. unfold ltof. simpl. apply le_n_S. apply remove_length. exists ((t, S(count_occ T_eq_dec l t))::m). simpl. split. apply Perm_cons. remember (count_occ T_eq_dec l t) as c. revert H1 Heqc. clear -l. revert l. induction c; simpl; intros. rewrite remove_notIn in H1. apply H1. destruct count_occ_not_In with (eq_dec:=T_eq_dec) (l:=l) (x:=t). apply H0; auto.
   destruct (add_inv t l) as [[l' H2]|H2]. apply Perm_Add with t l' (repeat t c++fold_right (fun p=>app (repeat (fst p) (snd p))) nil m); auto. apply IHc. rewrite remove_Add with t l' l; auto. rewrite count_occ_Add_eq with t l' l in Heqc; auto. contradict H2. destruct (count_occ_In T_eq_dec l t). apply H0. rewrite <- Heqc; auto. apply le_n_S. apply le_0_n. split. apply NoDup_cons. assert (~In t (remove T_eq_dec t l)). apply remove_In.
   contradict H. eapply Perm_In. apply Perm_sym. eapply H1. apply in_map_iff in H. destruct H as [[n c] [H4 H5]]. simpl in H4. subst n. clear -H3 H5. induction m. destruct H5. simpl. apply in_or_app. destruct H5; [left|right]. subst a. simpl. destruct c; simpl; auto. inversion H3. auto. apply IHm. inversion H3; auto. auto. auto. apply Forall_cons; auto. Defined.
+Theorem remove_In2: forall a l (x:T), In x (remove T_eq_dec a l) -> In x l. Proof. induction l; simpl; intros; auto. destruct (T_eq_dec a a0); auto. destruct H; auto. Qed.
+Theorem remove_In3: forall l a x, In x l -> x=a \/ In x (remove T_eq_dec a l). Proof. induction l; simpl; intros; auto. destruct H. subst x. destruct (T_eq_dec a0 a); auto. destruct (IHl a0 x H); auto. right. destruct (T_eq_dec a0 a); auto. Qed.
+
+Definition removeAll (l m:list T):= fold_right (remove T_eq_dec) m l.
+Theorem removeAll_In: forall  (l m:list T) x, ~In x l /\ In x m <-> In x (removeAll l m). Proof. induction l; intros; simpl; split; intros. destruct H; auto. split; auto. destruct H. destruct (T_eq_dec x a). subst x; contradict H; auto. assert (In x (removeAll l m)). apply IHl with (m:=m). split; auto. apply remove_In3 with (a:=a) in H1. destruct H1; auto; contradiction. assert (In x (removeAll l m)). apply remove_In2 in H; auto. apply IHl in H0. destruct H0. split; auto. contradict H0. destruct H0; auto. subst a. contradict H. apply remove_In; auto. Qed.
+Theorem removeAll_app: forall  (l1 l2 m:list T), removeAll (l1++l2) m = removeAll l1 (removeAll l2 m). Proof. induction l1; simpl; intros; auto. f_equal; auto. Qed.
+Theorem removeAll_length: forall  (l m:list T), length (removeAll l m) <= length m. Proof. induction l; simpl; intros; auto. eapply le_trans. apply remove_length. apply IHl; auto. Qed.
+Theorem removeAll_length2: forall  (l m:list T) x, In x l -> In x m -> length (removeAll l m) < length m. Proof. induction l; intros. destruct H. simpl. destruct H. subst x. destruct (in_dec T_eq_dec a l). apply le_lt_trans with (length (removeAll l m)); auto. apply remove_length. apply IHl with a; auto. apply lt_le_trans with (length (removeAll l m)). apply remove_length2; auto. apply removeAll_In; auto. apply removeAll_length. eapply le_lt_trans. eapply remove_length. eapply IHl; eauto. Qed.
+Definition incl_dec: forall  (l m:list T), {x|In x l & ~In x m}+{incl l m}. induction l; intros. right. intros x H; inversion H. destruct (in_dec T_eq_dec a m). destruct (IHl m); [left|right]. destruct s. exists x; auto. intros x H. destruct H; auto. subst x; auto. left; exists a; auto. Defined.
+Definition commonList: forall (l m:list T), {c|forall x, In x c<->In x l /\ In x m}. intros. exists (filter (dec2b (fun x=>in_dec T_eq_dec x m)) l). intros; split; intros. induction l. inversion H. simpl in H. remember (dec2b (fun x=>in_dec T_eq_dec x m) a) as b. destruct b. destruct H. subst a. symmetry in Heqb. apply dec2b_true in Heqb. auto. destruct IHl; auto. destruct IHl; auto. destruct H. induction l. destruct H. simpl. destruct H. subst a. remember (dec2b (fun y=>in_dec T_eq_dec y m) x) as b. symmetry in Heqb. destruct b; auto. apply dec2b_false in Heqb. contradiction. destruct (dec2b (fun y=>in_dec T_eq_dec y m) a); auto. Defined.
+Definition split_until: forall (P:T->Prop) (l:list T) (P_dec:forall x, In x l->{P x}+{~P x}), {m1:list T & {x:T &{m2|P x /\ l=m1++x::m2 & Forall (fun x=>~P x) m1}}}+{Forall (fun x=>~P x) l}. induction l; intros. right; auto. destruct IHl as [[m1 [x [m2 [H1 H2] H3]]]|H1]. intros. apply P_dec; auto. subst l. destruct (P_dec a). left; auto. left. exists nil. exists a. exists (m1++x::m2); auto. left. exists (a::m1). exists x. exists m2; auto. destruct (P_dec a). auto. left. exists nil. exists a. exists l; auto. right. auto. Defined.
 
 Inductive ForallR (R: relation T): list T->Prop:=
 |ForallR_nil: ForallR R nil
@@ -128,8 +140,22 @@ Theorem NoRDup_app: forall (R:relation T) l m, NoRDup R l -> NoRDup R m -> (fora
 Theorem nth_error_nth: forall l i (d:T), i<length l-> nth_error l i = Some (nth i l d). Proof. induction l; intros. inversion H. simpl. destruct i. simpl; auto. simpl. apply IHl. apply le_S_n; auto. Qed.
 Theorem NoRDup_nth: forall (R:relation T) l i j (d:T), (forall x y, R x y->R y x) -> NoRDup R l -> i<length l -> j<length l -> R (nth i l d) (nth j l d) -> i=j. Proof. intros R l i j d H H0. revert i j. induction H0; intros. inversion H0. destruct i; destruct j; auto; simpl in H4. absurd (R x (nth j l d)); auto. apply H1. apply nth_In. apply le_S_n; auto. absurd (R x (nth i l d)); auto. apply H1. apply nth_In. apply le_S_n; auto. f_equal. apply IHNoRDup; auto; apply le_S_n; auto. Qed.
 
-Theorem remove_In2: forall a l (x:T), In x (remove T_eq_dec a l) -> In x l. Proof. induction l; simpl; intros; auto. destruct (T_eq_dec a a0); auto. destruct H; auto. Qed.
-Theorem remove_In3: forall l a x, In x l -> x=a \/ In x (remove T_eq_dec a l). Proof. induction l; simpl; intros; auto. destruct H. subst x. destruct (T_eq_dec a0 a); auto. destruct (IHl a0 x H); auto. right. destruct (T_eq_dec a0 a); auto. Qed.
+Inductive Head: T -> list T -> Prop := Head_intro: forall a l, Head a (a::l).
+Inductive Tail: T -> list T -> Prop := Tail_nil: forall a, Tail a (a::nil) | Tail_cons: forall  a b l, Tail a l -> Tail a (b::l).
+Hint Constructors Head Tail.
+Definition Head_dec': forall (l:list T), {a| Head a l & forall b, Head b l -> b=a}+{l=nil}. intros. destruct l. right; auto. left; exists t; auto. intros. inversion H; auto. Defined.
+Definition Tail_dec': forall (l:list T), {a| Tail a l & forall b, Tail b l -> b=a}+{l=nil}. intros. destruct l. right; auto. left. induction l. exists t; auto. intros. inversion H; auto. inversion H2. destruct IHl as [b H1 H2]. destruct l. exists a; auto. intros. inversion H. inversion H4; auto. inversion H8. exists b. inversion H1; auto. intros. apply H2. inversion H. inversion H4; auto. Defined.
+Definition Tail_dec: forall (a:T) l, {Tail a l}+{~Tail a l}. intros. destruct (Tail_dec' l) as [[b H1 H2]|H1]. destruct (T_eq_dec a b). subst b; left; auto. right. contradict n; auto. subst l; right. intros D; inversion D. Defined.
+Definition Tail_rev: forall (l:list T) t, Tail t l -> {m|l=m++t::nil}. intros. induction l. exfalso. inversion H. destruct l. exists nil. inversion H; subst a; auto. inversion H2. destruct IHl as [m H1]. inversion H; auto. exists (a::m). simpl. f_equal; auto. Defined.
+Definition tail: forall (l:list T), {a:T & {m | l=m++a::nil}}+{l=nil}. induction l. right; auto. destruct IHl. destruct s as [b [m H]]. left. exists b. exists (a::m); auto. simpl. f_equal; auto. subst l. left. exists a. exists nil; auto. Defined.
+Theorem Tail_In: forall (l:list T) t, Tail t l -> In t l. Proof. intros. induction H; auto. Qed.
+Theorem Tail_app: forall(t:T) l m, Tail t l -> Tail t (m++l). Proof. intros. induction m; simpl; auto. Qed.
+Theorem Tail_app_rev: forall (t:T) l m, Tail t (l++m) -> m<>nil -> Tail t m. Proof. intros. induction l. auto. inversion H. destruct l. destruct m. contradict H0; auto. inversion H4. inversion H4. auto. Qed.
+
+
+Definition Disjoint: relation (list T):= fun l m =>forall x, ~(In x l /\ In x m).
+Theorem Disjoint_comm: forall (l m:list T), Disjoint l m -> Disjoint m l. Proof. unfold Disjoint. intros. intros D. destruct D. absurd (In x l/\In x m); auto. Qed.
+Theorem Disjoint_In1: forall l m (x:T), Disjoint l m -> In x l -> ~In x m. Proof. intros. intros D. unfold Disjoint in H. absurd (In x l/\In x m); auto. Qed.
 
 (* equiv *)
 Definition equiv (l m:list T) := forall x, In x l <-> In x m.
@@ -217,11 +243,17 @@ Theorem i2ps_spec1: forall l i, i < psSize l -> incl (i2ps l i) l. Proof. unfold
 Theorem i2ps_spec2: forall l i, i < psSize l -> ps2i l (i2ps l i) = i. Proof. unfold psSize. unfold ps2i. unfold i2ps. intros. destruct (powerSet l) as [pl H1 H2]. destruct (findP_nth (equiv (nth i pl nil)) pl) as [[n [x H3 H4]]|H3]. apply NoRDup_nth with (R:=equiv (T:=T)) (l:=pl) (d:=nil). intros. apply equiv_sym; auto. auto. apply nth_error_Some. rewrite H3. discriminate. auto. rewrite nth_error_nth with (d:=nil) in H3; auto. inversion H3. subst x; auto. apply nth_error_Some. rewrite H3. discriminate. absurd (equiv (nth i pl nil) (nth i pl nil)). apply H3. apply nth_In; auto. apply equiv_refl. Qed.
 Theorem i2ps_spec3: forall l m, incl m l -> equiv m (i2ps l (ps2i l m)). Proof. unfold i2ps. unfold ps2i. intros. destruct (powerSet l) as [pl H1 H2]. destruct (findP_nth (equiv m) pl) as [[n [x H3 H4]]|H3]. rewrite nth_error_nth with (d:=nil) in H3. inversion H3. subst x; auto. apply nth_error_Some. rewrite H3; discriminate. apply H1 in H. apply Exists_exists in H. destruct H as [x [H4 H5]]. apply H3 in H4. contradiction. Qed.
 
+Variable U_eq_dec:forall x y:U, {x=y}+{x<>y}.
+Definition inv_func: forall (f:T->U) l (d:T), (forall x y, In x l->In y l->f x=f y->x=y) -> {g:U->T|forall x, In x l->g (f x)=x & forall y, ~In y (map f l)->g y=d}. intros. exists (fun y=>match findP (fun x=>f x=y) l (fun x _=>U_eq_dec (f x) y) with inleft _ (exist2 _ _ f _ _) => f  | inright _ _ => d end). intros. destruct (findP (fun y=>f y=f x) l (fun y _=>U_eq_dec (f y) (f x))) as [[a H1 H2]|H1]; auto. absurd (f x=f x); auto. intros. destruct (findP (fun x=>f x=y) l (fun x _=>U_eq_dec (f x) y)) as [[a H1 H2]|H1]; auto.  contradict H0. subst y. apply in_map_iff. exists a; auto. Defined.
+
 End ListType2.
 
 Definition splits: forall {T:Type} (l: list T), {pl| forall p, l=fst p++snd p <-> In p pl & NoDup pl}. induction l as [|a l]. exists ((nil,nil)::nil). intros; split; intros. destruct p. simpl in H. destruct l. destruct l0. left; auto. inversion H. inversion H. destruct H. subst p. auto. destruct H. apply NoDup_cons; auto. apply NoDup_nil. destruct IHl as [pl H1 Hn]. exists ((nil, a::l)::map (fun p=> (a::fst p, snd p)) pl). intros; split; intros. destruct p as [t u]. simpl in H. destruct t. left. simpl in H. subst u. auto. inversion H. subst a l. right. apply in_map_iff. exists (t0,u). split; auto. apply H1; auto. destruct H. subst p. auto. apply in_map_iff in H. destruct H as [[t u] [H2 H3]]. subst p. simpl. f_equal. apply H1 in H3. subst l; auto. apply NoDup_cons. intros C. apply in_map_iff in C. destruct C as [[x y] [H2 H3]]. inversion H2. apply NoDup_map; auto. intros. destruct x. destruct y. simpl in H2. inversion H2. auto. Defined.
+Definition ubound_sig: forall (l:list nat), {a|forall x, In x l->x<a & forall b, (forall x, In x l->x<b) -> a<=b}. induction l. exists 0; intros. destruct H. apply le_O_n. destruct IHl as [m Ha Hb]. destruct (le_lt_dec m a). exists (S a); intros. destruct H. subst x; auto. apply lt_le_trans with m; auto. apply H. left; auto. exists m; intros; auto. destruct H; auto. subst x; auto. apply Hb. intros. apply H. right; auto. Defined.
+Definition ubound (l:list nat): nat := let (n,_,_):= ubound_sig l in n.
+Theorem ubound_Disjoint: forall l m, Disjoint l (map (plus (ubound l)) m). Proof. intros. unfold ubound. destruct (ubound_sig l) as [n H _]. intros x D. destruct D. absurd (x<n); auto. apply le_not_lt. apply in_map_iff in H1. destruct H1 as [y [H2 H3]]. subst x. auto. apply le_plus_l. Qed.
 
-Hint Constructors Swap Perm Add Sorted ForallR NoRDup.
+Hint Constructors Swap Perm Add Sorted ForallR NoRDup Tail Head.
 Hint Resolve in_eq in_cons Swap_sym Perm'_sym Perm'_refl Perm'_trans Swap_Perm'.
 Hint Resolve Perm'_cons Perm'_cons_Add.
 Hint Resolve Perm_In Perm_length Perm__Perm' Perm_refl Perm_sym Perm_cons.
@@ -230,7 +262,8 @@ Hint Resolve Perm_rev app_Add Perm_app_swap Perm_app Perm_app_rev NoDup_incl_Per
 Hint Resolve partition_Perm filter_app_Perm fold_right_Perm filter_Add1 filter_Add2 filter_Perm filter_Forall filter_None filter_ord filter_and.
 Hint Resolve filter_app filter_NoDup filter_equiv dec2b_true dec2b_false Rpair_list.
 Hint Resolve NoDup_incl_length NoDup_map_inv NoDup_map NoDup_flat_map NoDup_repeat map_Add Perm_map Perm_map_inv filter_map flat_map_app Perm_flat_map map_repeat.
+Hint Resolve remove_In2 remove_In3 Tail_app Tail_app_rev Tail_In Disjoint_comm Disjoint_In1.
 Hint Resolve count_occ_Add_eq count_occ_Add_neq Perm__count_occ count_occ__Perm nodup_Add1 nodup_Add2 nodup_Perm nodup_incl_min ForallR_Add_rev ForallR_Add ForallR_Perm NoRDup_Add_rev NoRDup_Add NoRDup_Perm NoRDup_app.
 Hint Resolve Sorted_cons_rev Sorted_min_cons Sorted_Perm_uniq Sorted_app.
-Hint Resolve all_pair_spec1 all_pair_spec2.
+Hint Resolve all_pair_spec1 all_pair_spec2 ubound_Disjoint.
 
