@@ -1,4 +1,4 @@
-all:	list_util.vo nat_theory.vo polynomial.vo combi.vo ModEq.vo LP.vo RegExp.vo
+all:	list_util.vo nat_theory.vo polynomial.vo combi.vo ModEq.vo LP.vo RegExp.vo LQ.vo FSA.vo
 
 list_util.vo:	list_util.v
 	coqc list_util.v
@@ -17,6 +17,9 @@ ModEq.vo:	ModEq.v list_util.vo
 
 LP.vo:	LP.v list_util.vo
 	coqc LP.v
+
+LQ.vo:	LQ.v list_util.vo
+	coqc LQ.v
 
 FSA.vo:	FSA.v list_util.vo
 	coqc FSA.v
