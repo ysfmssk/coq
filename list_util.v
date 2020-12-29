@@ -111,6 +111,10 @@ Definition count_list: forall l, {pl| Perm l (fold_right (fun p=>app (repeat (fs
 Theorem remove_In2: forall a l (x:T), In x (remove T_eq_dec a l) -> In x l. Proof. induction l; simpl; intros; auto. destruct (T_eq_dec a a0); auto. destruct H; auto. Qed.
 Theorem remove_In3: forall l a x, In x l -> x=a \/ In x (remove T_eq_dec a l). Proof. induction l; simpl; intros; auto. destruct H. subst x. destruct (T_eq_dec a0 a); auto. destruct (IHl a0 x H); auto. right. destruct (T_eq_dec a0 a); auto. Qed.
 
+Theorem incl_nil_l: forall l:list T, incl nil l. Proof. intros l x H. destruct H. Qed.
+Theorem incl_l_nil: forall l:list T, incl l nil -> l=nil. Proof. intros l H. destruct l; auto. absurd (In t nil); auto. Qed.
+Theorem remove_incl: forall l m (a:T), incl l m -> incl (remove T_eq_dec a l) (remove T_eq_dec a m). Proof. intros. intros x H0. destruct remove_In3 with m a x; auto. apply H. apply remove_In2 with a; auto. subst a. contradict H0. apply remove_In. Qed.
+Theorem in_in_remove: forall (x y:T) l, x<>y -> In x l -> In x (remove T_eq_dec y l). Proof. induction l; intros. destruct H0. destruct H0. subst a. simpl. destruct (T_eq_dec y x). contradict H; auto. left; auto. simpl. destruct (T_eq_dec y a); auto. Qed.
 Definition removeAll (l m:list T):= fold_right (remove T_eq_dec) m l.
 Theorem removeAll_In: forall  (l m:list T) x, ~In x l /\ In x m <-> In x (removeAll l m). Proof. induction l; intros; simpl; split; intros. destruct H; auto. split; auto. destruct H. destruct (T_eq_dec x a). subst x; contradict H; auto. assert (In x (removeAll l m)). apply IHl with (m:=m). split; auto. apply remove_In3 with (a:=a) in H1. destruct H1; auto; contradiction. assert (In x (removeAll l m)). apply remove_In2 in H; auto. apply IHl in H0. destruct H0. split; auto. contradict H0. destruct H0; auto. subst a. contradict H. apply remove_In; auto. Qed.
 Theorem removeAll_app: forall  (l1 l2 m:list T), removeAll (l1++l2) m = removeAll l1 (removeAll l2 m). Proof. induction l1; simpl; intros; auto. f_equal; auto. Qed.
@@ -270,7 +274,7 @@ Hint Resolve Perm_rev app_Add Perm_app_swap Perm_app Perm_app_rev NoDup_incl_Per
 Hint Resolve partition_Perm filter_app_Perm fold_right_Perm filter_Add1 filter_Add2 filter_Perm filter_Forall filter_None filter_ord filter_and.
 Hint Resolve filter_app filter_NoDup filter_equiv dec2b_true dec2b_false Rpair_list.
 Hint Resolve NoDup_incl_length NoDup_map_inv NoDup_map NoDup_flat_map NoDup_repeat map_Add Perm_map Perm_map_inv filter_map flat_map_app Perm_flat_map map_repeat.
-Hint Resolve remove_In2 remove_In3 Tail_app Tail_app_rev Tail_In Disjoint_comm Disjoint_In1.
+Hint Resolve incl_nil_l incl_l_nil remove_incl in_in_remove remove_In2 remove_In3 Tail_app Tail_app_rev Tail_In Disjoint_comm Disjoint_In1.
 Hint Resolve count_occ_Add_eq count_occ_Add_neq Perm__count_occ count_occ__Perm nodup_Add1 nodup_Add2 nodup_Perm nodup_incl_min ForallR_Add_rev ForallR_Add ForallR_Perm NoRDup_Add_rev NoRDup_Add NoRDup_Perm NoRDup_app.
 Hint Resolve Sorted_cons_rev Sorted_min_cons Sorted_Perm_uniq Sorted_app.
 Hint Resolve all_pair_spec1 all_pair_spec2 ubound_Disjoint.
