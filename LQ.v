@@ -4,7 +4,7 @@ Require Import Relations.
 Require Import Wellfounded.
 Require Import list_util.
 
-Hint Resolve incl_refl incl_nil_l lt_le_weak Nat.le_max_l Nat.le_max_r le_not_lt lt_not_le.
+Hint Resolve incl_refl lt_le_weak Nat.le_max_l Nat.le_max_r le_not_lt lt_not_le.
 
 (* LQ *)
 Inductive Term : Set :=
@@ -24,7 +24,7 @@ Definition LQand (f g:Formula) := Neg (Imp f (Neg g)).
 Definition LQor (f g:Formula) := Imp (Neg f) g.
 Definition Ex v f := Neg (Any v (Neg f)).
 
-Declare Scope LQ_scope.
+(* Declare Scope LQ_scope. *)
 Notation "! f" := (Neg f) (at level 80, no associativity) : LQ_scope.
 Notation "f ==> g" := (Imp f g) (at level 83, right associativity) : LQ_scope.
 Notation "f &^ g" := (LQand f g) (at level 81, left associativity) : LQ_scope.
@@ -171,7 +171,7 @@ Theorem LQInf_incl1: forall p l f, LQInf l f -> LQInf (p::l) f. Proof. intros. a
 Theorem LQTh_LQInf': forall f, LQTheorem f -> LQInf nil f. Proof. intros. induction H; auto. apply LQIMp with f nil nil; auto. Qed.
 Theorem LQTh_LQInf: forall pre f, LQTheorem f -> LQInf pre f. Proof. intros. apply LQInf_incl with nil. apply LQTh_LQInf'; auto. intros x Hx. destruct Hx. Qed.
 Theorem LQInf_LQTh: forall f, LQInf nil f -> LQTheorem f. Proof. intros. remember nil as l. revert Heql. induction H; intros; auto; subst pre. destruct H. apply incl_l_nil in H0. apply incl_l_nil in H. subst p1 p2. apply LQMp with f; auto. Qed.
-Theorem InfTh': forall p l f, LQInf l f -> LQInf (remove Formula_eq_dec p l) (p==>f). Proof. intros. induction H; intros. apply InfMp with f; auto. destruct (Formula_eq_dec f p). subst p. apply ImpRefl. apply InfMp with f; auto. apply LQIPre. apply in_in_remove; auto. apply InfMp with (p==>f). apply InfMp with (p==>f==>g); auto. apply LQInf_incl with (remove Formula_eq_dec p p1); auto. apply remove_incl; auto. apply LQInf_incl with (remove Formula_eq_dec p p2); auto. apply remove_incl; auto. destruct (in_dec Formula_eq_dec p pre). apply InfMp with (Any v (p==>f)); auto. apply LQIUg; auto. intros q Hq. apply H. apply remove_In2 in Hq; auto. apply InfMp with (Any v f); auto. rewrite remove_notIn; auto. Qed.
+Theorem InfTh': forall p l f, LQInf l f -> LQInf (remove Formula_eq_dec p l) (p==>f). Proof. intros. induction H; intros. apply InfMp with f; auto. destruct (Formula_eq_dec f p). subst p. apply ImpRefl. apply InfMp with f; auto. apply InfMp with (p==>f). apply InfMp with (p==>f==>g); auto. apply LQInf_incl with (remove Formula_eq_dec p p1); auto. apply LQInf_incl with (remove Formula_eq_dec p p2); auto. destruct (in_dec Formula_eq_dec p pre). apply InfMp with (Any v (p==>f)); auto. apply LQIUg; auto. intros q Hq. apply H. apply remove_In2 in Hq; auto. apply InfMp with (Any v f); auto. rewrite remove_notIn; auto. Qed.
 Theorem InfTh: forall p l m f, Add p l m -> LQInf m f -> LQInf l (p==>f). Proof. intros. apply LQInf_incl with (remove Formula_eq_dec p m). apply InfTh'; auto. intros x Hx. apply Add_in with (x:=x) in H. assert (In x m). apply remove_In2 in Hx; auto. apply H in H1. destruct H1. subst x. contradict Hx. apply remove_In. auto. Defined.
 Theorem InfTh1: forall p l f, LQInf (p::l) f -> LQInf l (p==>f). Proof. intros. apply InfTh with (p::l); auto. Qed.
 
