@@ -156,10 +156,11 @@ Hint Resolve Bezour_neg Euclid Coprime_mult_rev GCD_Coprime Coprime_GCD.
 
 Theorem ModEq_Coprime_mult: forall n m x y, Coprime n m -> ModEq n x y -> ModEq m x y -> ModEq (n*m) x y. Proof. cut (forall n m x y, x<=y->Coprime n m->ModEq n x y->ModEq m x y->ModEq (n*m) x y). intros. destruct (le_lt_dec x y); auto. intros. assert (H3:y=x+(y-x)). apply le_plus_minus; auto. assert (H4:x=x+0). apply plus_n_O. rewrite H4. rewrite H3. apply ModEq_plus; auto. rewrite H4 in H1. rewrite H3 in H1. apply ModEq_minus in H1. destruct (Divide_multN H1) as [q H5]. rewrite H4 in H2. rewrite H3 in H2. apply ModEq_minus in H2. rewrite H5 in H2. rewrite mult_comm in H2. apply Euclid in H2; auto. destruct (Divide_multN H2) as [p H6]. rewrite H5. subst q. rewrite <- mult_assoc. rewrite mult_comm. apply multN_Divide. Qed.
 Theorem Divide_Coprime_mult: forall n m x, Coprime n m -> Divide n x -> Divide m x -> Divide (n*m) x. Proof. intros. apply ModEq_Coprime_mult; auto. Qed.
+Theorem ModEq_Coprime_mult_rev: forall n m x y, Coprime n m -> ModEq (n*m) x y -> ModEq n x y. Proof. intros. destruct (ModEq_multN H0) as [[q H1]|[q H1]]. subst y. replace (q*(n*m)) with (q*m*n); auto. rewrite <- mult_assoc. f_equal; auto. subst x. replace (q*(n*m)) with (q*m*n); auto. rewrite <- mult_assoc. f_equal; auto. Qed.
 Definition Chinese: forall n m, Coprime n m -> forall a b, {x|ModEq n a x /\ ModEq m b x & forall y, ModEq n a y -> ModEq m b y -> ModEq (n*m) x y}. intros. destruct (nat_eq_dec n 0) as [Hn|Hn]. subst n. replace m with 1. exists a. split; auto. intros; auto. inversion H. apply le_antisym. destruct H0. apply Divide_le; auto. contradict H; subst m; unfold Coprime; auto. apply H1; auto. destruct (nat_eq_dec m 0) as [Hm|Hm]. subst m. replace n with 1. exists b; auto. inversion H. destruct H0. apply le_antisym; auto.
   destruct (bezour Hn H) as [c [d H0]]. apply GCD_sym in H. destruct (bezour Hm H) as [e [f H1]]. assert (ModEq n a (a*(e*m)+b*(c*n))). replace a with (a+0) at 1. apply ModEq_plus. rewrite H1. rewrite mult_plus_distr_l. replace a with (0+a) at 1; auto. rewrite mult_1_r. apply ModEq_plus; auto. rewrite mult_assoc. apply multN_Divide. rewrite mult_assoc. apply multN_Divide. rewrite <- plus_n_O; auto. assert (ModEq m b (a*(e*m)+b*(c*n))). replace b with (0+b) at 1; auto. apply ModEq_plus. rewrite mult_assoc. apply multN_Divide. rewrite H0. rewrite mult_plus_distr_l. rewrite mult_1_r. replace b with (0+b) at 1; auto. apply ModEq_plus; auto. rewrite mult_assoc. apply multN_Divide. exists (a*(e*m)+b*(c*n)); auto.
   intros. apply ModEq_Coprime_mult; auto. apply ModEq_trans with a; auto. apply ModEq_trans with b; auto. Qed.
-Hint Resolve ModEq_Coprime_mult Divide_Coprime_mult.
+Hint Resolve ModEq_Coprime_mult Divide_Coprime_mult ModEq_Coprime_mult_rev.
 
 (* Prime *)
 Definition Prime p : Prop := Pnum (fun x=>Divide x p) 2.
@@ -252,3 +253,9 @@ Definition invMod: forall n a, {b|ModEq n (a*b) 1}+{~Coprime n a}. intros. destr
 Theorem ModEq_m1_sq: forall n, ModEq (S n) (n*n) 1. Proof. intros. apply ModEq_minus with (S(n+n)). replace (S (n+n)+n*n) with (S n*S n). apply ModEq_trans with 0. apply ModEq_sym; apply multN_Divide. replace (S (n+n)+1) with (2*S n); auto. apply multN_Divide. simpl. repeat rewrite <- plus_n_Sm. f_equal. f_equal. rewrite plus_assoc; auto. simpl. f_equal. rewrite <- plus_assoc. f_equal. rewrite mult_comm. simpl. auto. Qed.
 
 Hint Resolve Totient_mult Totient_sum ModInv ModEq_m1_sq.
+
+(* LCM *)
+Definition LCM (l x y:nat) := MinP (fun m=>m<>0/\Divide x m /\ Divide y m) l.
+Definition lcm_sig: forall x y, {l|LCM l x y}+{x=0\/y=0}. intros. destruct (nat_eq_dec x 0). right; auto. destruct (nat_eq_dec y 0). right; auto. left. destruct minP with (P:=fun m=>m<>0/\Divide x m/\Divide y m) (n:=S (x*y)) as [[m H]|H]. intros. destruct (nat_eq_dec x0 0). right. intros C. destruct C. contradiction. destruct (Divide_dec x x0). destruct (Divide_dec y x0); [left|right]; auto. contradict n2. destruct n2. destruct H1; auto. right. contradict n2. destruct n2. destruct H1; auto. exists m; auto. absurd (x*y<>0/\Divide x (x*y)/\Divide y (x*y)); auto. split; auto. intros C. apply mult_is_O in C. destruct C; contradiction. split; auto. rewrite mult_comm; auto. Defined.
+
+
