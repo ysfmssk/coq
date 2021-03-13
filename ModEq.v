@@ -12,6 +12,7 @@ Theorem pow0: forall n, pow n 0 = 1. Proof. simpl; auto. Qed.
 Theorem pow0n: forall n, n<>0->pow 0 n=0. Proof. intros. destruct n. contradict H; auto. auto. Qed.
 Theorem powS: forall n a, pow n (S a) = n * pow n a. Proof. intros; simpl; auto. Qed.
 Theorem pow1: forall n, pow n 1 = n. Proof. intros; simpl. rewrite mult_1_r; auto. Qed.
+Theorem pow_1n: forall n, pow 1 n = 1. Proof. induction n; auto. rewrite powS. rewrite mult_1_l; auto. Qed.
 Theorem pow_plus: forall n a b, pow n (a+b) = pow n a* pow n b. Proof. induction a; simpl; intros; auto. rewrite <- mult_assoc; f_equal; auto. Qed.
 Theorem pow_mult: forall p a b, pow p (a*b) = pow (pow p b) a. Proof. induction a; intros; simpl; auto. rewrite pow_plus. f_equal; auto. Qed.
 Theorem pow_mult2: forall a b k, pow (a*b) k = pow a k*pow b k. Proof. induction k; simpl; auto. repeat rewrite <- mult_assoc. f_equal. rewrite IHk. repeat rewrite mult_assoc. f_equal; auto. apply mult_comm. Qed.
@@ -30,8 +31,9 @@ Theorem mult_fold_plus: forall m l a, m*fold_right plus a l = fold_right plus (m
 Theorem fold_plus_map: forall {X:Type} (l:list X) a b f g, fold_right plus a (map f l)+fold_right plus b (map g l)=fold_right plus (a+b) (map (fun x=>f x+g x) l). Proof. induction l; intros; simpl; auto. repeat rewrite <- plus_assoc. f_equal. rewrite plus_comm. rewrite <- plus_assoc. f_equal; auto. rewrite plus_comm; auto. Qed.
 Theorem fact_fold: forall n, fact n = fold_right mult 1 (seq 1 n). Proof. induction n. simpl; auto. rewrite seqS. rewrite fold_mult_app. simpl. rewrite mult_1_r. rewrite <- IHn. rewrite <- mult_n_Sm. rewrite plus_comm. f_equal; auto. apply mult_comm. Qed.
 Lemma fact_nz: forall n, fact n<>0. Proof. induction n; simpl; auto. contradict IHn. destruct (fact n); auto. simpl in IHn. inversion IHn. Qed.
+Lemma fact_S: forall n, fact (S n)=(S n)*fact n. Proof. intros. simpl. auto. Qed.
 
-Hint Resolve pow0 pow0n powS pow1 pow_le pow_plus pow_mult pow_mult2 pow_cancel_r pow_cancel_l pow_nz pow_mult_fold_Perm pow_mult_fold_nz pow_mult_fold_app seqS fold_mult_app fold_plus_app mult_fold_plus fold_plus_map fact_fold fact_nz.
+Hint Resolve pow0 pow0n powS pow1 pow_1n pow_le pow_plus pow_mult pow_mult2 pow_cancel_r pow_cancel_l pow_nz pow_mult_fold_Perm pow_mult_fold_nz pow_mult_fold_app seqS fold_mult_app fold_plus_app mult_fold_plus fold_plus_map fact_fold fact_nz.
 Hint Resolve le_plus_l le_plus_r le_n_S le_S_n le_not_lt lt_not_le lt_le_weak plus_assoc plus_comm mult_assoc mult_comm mult_plus_distr_r mult_plus_distr_l seq_NoDup.
 Definition nat_eq_dec: forall x y:nat, {x=y}+{x<>y}. induction x; intros; destruct y. left; auto. right; auto. right; auto. destruct (IHx y); [subst y; left|right]; auto. Defined.
 
