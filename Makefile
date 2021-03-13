@@ -9,7 +9,7 @@ polynomial.vo:	polynomial.v ModEq.vo list_util.vo
 combi.vo:	combi.v ModEq.vo list_util.vo
 	coqc combi.v
 
-nat_theory.vo:	nat_theory.v ModEq.vo list_util.vo
+nat_theory.vo:	nat_theory.v ModEq.vo list_util.vo combi.vo
 	coqc nat_theory.v
 
 ModEq.vo:	ModEq.v list_util.vo
