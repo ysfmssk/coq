@@ -73,9 +73,11 @@ Definition carmichael_sig : forall n, {m|Carmichael n m}. intros. destruct (nat_
 Theorem Carmichael_nz: forall n m, Carmichael n m -> m<>0. Proof. intros. inversion H. destruct H0; auto. Qed.
 Theorem Carmichael0: Carmichael 0 1. Proof. intros. apply MinP_intro. split; intros; auto. destruct y. contradict H; apply GCD_00; auto. apply GCD_unique with (g:=S y) in H; auto. rewrite H; auto. intros. destruct H. destruct m; auto. Qed.
 Theorem Carmichael1: Carmichael 1 1. Proof. intros. apply MinP_intro. split; intros; auto. intros. destruct H. destruct m; auto. Qed.
-(*
-Theorem Carmichael_mult: forall n m a b c, Coprime n m -> Carmichael n a -> Carmichael m b -> LCM c a b -> Carmichael (n*m) c.
+Theorem Carmichael_Divide: forall n c a, Carmichael n c -> (forall y, Coprime n y-> ModEq n (pow y a) 1) -> Divide c a. Proof. intros. destruct (divmod c a) as [[q [r [H1 H2] _]]|H1]. subst a. destruct (nat_eq_dec r 0) as [Hr|Hr]. subst r. auto. absurd (c<=r); auto. inversion H. apply H3. split; auto. intros. subst n0. destruct H1. assert (ModEq n (pow y c) 1); auto. apply H0 in H5. rewrite pow_plus in H5. rewrite pow_mult in H5. clear -H5 H6. induction q. simpl in H5. rewrite <- plus_n_O in H5; auto. apply IHq. simpl in H5. apply ModEq_div with 1; auto. apply ModEq_trans with (pow y c*pow (pow y c) q*pow y r). rewrite <- mult_assoc; auto. auto. subst c. apply Carmichael_nz in H. contradict H; auto. Qed.
+(*Theorem Carmichael_mult: forall n m a b c, Coprime n m -> Carmichael n a -> Carmichael m b -> LCM c a b -> Carmichael (n*m) c. Proof. intros. destruct (carmichael_sig (n*m)) as [d H3]. replace c with d; auto. apply le_antisym. inversion H3. apply H5. inversion H2. destruct H7 as [Ha [Hb Hc]]. split; auto. intros. apply Coprime_sym in H7. destruct (Coprime_mult_rev n m H7). apply ModEq_Coprime_mult; auto. destruct (Divide_multN Hb) as [x Hx]. subst c n1. rewrite pow_mult. clear -H10 H0. induction x; simpl; auto. inversion H0. destruct H. replace 1 with (1*1); auto. destruct (Divide_multN Hc) as [x Hx]. subst n1 c. rewrite pow_mult. clear -H1 H11. induction x; simpl; auto. inversion H1. destruct H. replace 1 with (1*1); auto.
+  apply Divide_le. apply LCM_Divide_CM with a b; auto. apply Carmichael_Divide with n; auto. intros. inversion H3. apply ModEq_Coprime_mult_rev with m; auto. inversion H3. destruct H5. apply H8; auto. apply Coprime_mult. XX apply Carmichael_nz with (n*m); auto.   Qed.
 *)
+
 
 (* RSA *)
 Record RSAKey : Set := mkRSAKey {
