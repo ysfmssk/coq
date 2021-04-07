@@ -80,6 +80,8 @@ Theorem dec2b_true: forall P P_dec x, dec2b (P:=P) P_dec x = true <-> P x. Proof
 Theorem dec2b_false: forall P P_dec x, dec2b (P:=P) P_dec x = false <-> ~P x. Proof. intros. unfold dec2b. destruct (P_dec x). split; intros. inversion H. contradiction. split; intros; auto. Qed.
 
 Definition Forall_dec: forall (P:T->Prop) l (P_dec:forall x, In x l->{P x}+{~P x}), {x|In x l & ~P x}+{Forall P l}. induction l; intros. right; auto. destruct IHl as  [[x H]|H]. intros. apply P_dec; auto. left; exists x; auto. destruct (P_dec a); auto. left; exists a; auto. Defined.
+Theorem Forall_imp: forall (P Q:T->Prop) l, (forall x, In x l->P x->Q x) -> Forall P l -> Forall Q l. Proof. induction l; intros; auto. inversion H0. apply Forall_cons; auto. Qed.
+Theorem Forall_incl: forall (P:T->Prop) l m, incl l m -> Forall P m -> Forall P l. Proof. intros. apply Forall_forall. intros. apply Forall_forall with (x:=x) in H0; auto. Qed.
 Definition Exists_dec: forall (P:T->Prop) l (P_dec:forall x, In x l->{P x}+{~P x}), {Exists P l}+{~Exists P l}. induction l; intros. right; intros C. inversion C. destruct (P_dec a); auto. destruct IHl; auto. right. intros C. inversion C; contradiction. Defined.
 Definition findP : forall (P:T->Prop) (l:list T) (P_dec:forall x, In x l->{P x}+{~P x}), {x|In x l & P x}+{forall x, In x l ->~P x}. induction l; intros. right. intros. destruct H. destruct (P_dec a); auto. left; auto. exists a; auto. destruct IHl as [[x H]|H]; [|left; exists x|right]; auto. intros. destruct H0; auto. subst a; auto. Defined.
 Definition findP_nth: forall (P:T->Prop) l (P_dec:forall x, In x l ->{P x}+{~P x}), {n:nat & {x:T|nth_error l n = Some x & P x}}+{forall x, In x l -> ~P x}. induction l; intros. right. intros. destruct H. destruct (P_dec a). left; auto. left; exists 0; exists a; auto. destruct IHl as [[m [x H1 H2]]|H1]. intros. apply P_dec; right; auto. left; exists (S m); exists x; auto. right. intros. destruct H; auto. subst x; auto. Defined.
@@ -268,14 +270,14 @@ Definition ubound_sig: forall (l:list nat), {a|forall x, In x l->x<a & forall b,
 Definition ubound (l:list nat): nat := let (n,_,_):= ubound_sig l in n.
 Theorem ubound_Disjoint: forall l m, Disjoint l (map (plus (ubound l)) m). Proof. intros. unfold ubound. destruct (ubound_sig l) as [n H _]. intros x D. destruct D. absurd (x<n); auto. apply le_not_lt. apply in_map_iff in H1. destruct H1 as [y [H2 H3]]. subst x. auto. apply le_plus_l. Qed.
 
-Hint Constructors Swap Perm Add Sorted ForallR NoRDup Tail Head.
+Hint Constructors Swap Perm Add NoDup Sorted ForallR NoRDup Tail Head.
 Hint Resolve in_eq in_cons Swap_sym Perm'_sym Perm'_refl Perm'_trans Swap_Perm'.
 Hint Resolve Perm'_cons Perm'_cons_Add.
 Hint Resolve Perm_In Perm_length Perm__Perm' Perm_refl Perm_sym Perm_cons.
 Hint Resolve Add_insert Add_dual Perm_Add_inv Perm_trans Perm'__Perm.
 Hint Resolve Perm_rev Perm_one app_Add Perm_app_swap Perm_app Perm_app_rev NoDup_incl_Perm NoDup_incl_each_Perm count_occ_Add_eq count_occ_Add_neq Perm__count_occ count_occ__Perm.
 Hint Resolve partition_Perm filter_app_Perm fold_right_Perm filter_Add1 filter_Add2 filter_Perm filter_Forall filter_None filter_ord filter_and.
-Hint Resolve filter_app filter_NoDup filter_equiv dec2b_true dec2b_false Rpair_list.
+Hint Resolve filter_app filter_NoDup filter_equiv dec2b_true dec2b_false Rpair_list Forall_imp Forall_incl.
 Hint Resolve NoDup_incl_length NoDup_map_inv NoDup_map NoDup_flat_map NoDup_repeat NoDup_Perm NoDup_app_rev map_Add Perm_map Perm_map_inv filter_map flat_map_app Perm_flat_map map_repeat.
 Hint Resolve incl_nil_l incl_l_nil remove_incl in_in_remove remove_In2 remove_In3 Tail_app Tail_app_rev Tail_In Disjoint_comm Disjoint_In1.
 Hint Resolve count_occ_Add_eq count_occ_Add_neq Perm__count_occ count_occ__Perm nodup_Add1 nodup_Add2 nodup_Perm nodup_incl_min ForallR_Add_rev ForallR_Add ForallR_Perm NoRDup_Add_rev NoRDup_Add NoRDup_Perm NoRDup_app.
