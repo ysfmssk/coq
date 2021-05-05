@@ -44,3 +44,4 @@ Hint Resolve FSwap FPlus FPred FMinus FMult FSwap_WFF FPlus_WFF FPred_WFF FMinus
 
 Theorem Zero_WFT: WFTerm Zero. Proof. intros. unfold Zero; auto. Qed.
 Theorem Succ_WFT: forall t, WFTerm t->WFTerm (Succ t). Proof. intros. unfold Succ; auto. Qed.
+Hint Resolve Zero_WFT Succ_WFT.

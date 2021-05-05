@@ -276,6 +276,10 @@ Theorem TFFSub_step: forall v u t1 t2, v<>u -> ~VarTerm u t1 -> ~VarTerm v t2 ->
   apply TFFSub_Any_inv2 in H; auto. destruct H; subst f1. destruct H2. destruct (nat_eq_dec u n). subst n. apply TFFSub_Any_inv1 in H1. subst f2. apply TFFSub_Any_inv1 in H0; auto. subst g. apply TFFSub_Any2; auto. destruct H2. assert (f=sub v t1 f). unfold sub. destruct (sub_sig v t1 f); auto. rewrite <- H3 in H0. assert (g=f2). eapply TFFSub_unique; eauto. subst f2. apply nFV_TFFSub. apply TFFSub_Any_inv2 in H0; auto. destruct H0; subst g. destruct H4. apply nFV_Any2. apply Sub_nFV2 with u t2 f; auto. apply TFFSub_Any_inv2 in H0; auto. destruct H0; subst g. destruct H3. apply TFFSub_Any_inv2 in H1; auto. destruct H1; subst f2. destruct H4. apply TFFSub_Any2; auto. eapply IHf; eauto. Qed. 
 Hint Resolve nFV_TFFSub TFFSub_swap TFFSub_refl TFFSub_step.
 
+Fixpoint Imps (l:list Formula) (c:Formula) : Formula := match l with nil => c |p::l' => p ==> Imps l' c end.
+Fixpoint with_idx' {T:Type} (l:list T) (s:nat) : list (T*nat) := match l with nil => nil |a::l' => (a,s)::with_idx' l' (S s) end.
+Definition with_idx {T:Type} (l:list T) : list (T*nat) := with_idx' l 0.
+
 Inductive PAxiom: Formula -> Prop :=
 |PAL1 : forall f g, PAxiom (f==>g==>f)
 |PAL2 : forall f g h, PAxiom ((f==>g==>h)==>(f==>g)==>f==>h)
@@ -287,13 +291,16 @@ Inductive PAxiom: Formula -> Prop :=
 |PAP1 : forall x, PAxiom (Succ (#x) != Zero)
 |PAP2 : forall x y, PAxiom (Succ (#x) == Succ (#y) ==> #x == #y)
 |PAP3 : forall x f f0 fs, TFFSub x Zero f f0 -> TFFSub x (Succ (#x)) f fs -> PAxiom (f0 ==> Any x (f==>fs) ==> Any x f)
+|PAF1 : forall i n, i<n -> PAxiom (FuncT (FProj i) (map Var (seq 0 n)) == #i)
+|PAF2 : forall f fs n, PAxiom (Imps (map (fun p=>#(snd p) == FuncT (fst p) (map Var (seq (length fs) n))) (with_idx fs)) (FuncT (FComp f fs) (map Var (seq (length fs) n)) == FuncT f (map Var (seq 0 (length fs)))))
+|PAF3 : forall n f g, WFFunc n f -> PAxiom (FuncT (FRecu f g) (Zero::map Var (seq 0 n)) == FuncT f (map Var (seq 0 n)))
+|PAF4 : forall n f g, WFFunc n f -> PAxiom (FuncT (FRecu f g) ((#n)::map Var (seq 0 n)) == (#S n) ==> FuncT (FRecu f g) (Succ (#n)::map Var (seq 0 n)) == FuncT g ((#S n)::(#n)::map Var (seq 0 n)))
 .
 Inductive PTheorem: Formula -> Prop :=
 |PTAx : forall f, PAxiom f -> PTheorem f
 |PTMp : forall f g, PTheorem (f==>g) -> PTheorem f -> PTheorem g
 |PTUg : forall f v, PTheorem f -> PTheorem (Any v f)
 .
-
 (* Inference *)
 Inductive Inf (l:list Formula) : Formula -> Prop :=
 |IAx: forall f, PAxiom f -> Inf l f
