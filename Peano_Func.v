@@ -18,5 +18,29 @@ Hint Resolve Var_Eq_sym Var_Eq_trans Term_Eq_refl Term_Eq_sym Var_Eq_SubTerm Ter
 
 Theorem Term_Eq_Succ: forall t u l, Inf l (t==u) -> Inf l (Succ t==Succ u). Proof. intros. apply Term_Eq_SubTerm with t u 0 (Succ (#0)); auto; unfold Succ; apply ST_Func; auto. Qed.
 Theorem Term_Eq_Succ_inv: forall t u l, Inf l (Succ t==Succ u) -> Inf l (t==u). Proof. intros. apply IMP with (Succ t==Succ u) nil l; auto. destruct (varTerm t) as [vs Hv]. apply Ui with (Succ t==Succ (#S(maxl vs))==>t==(#S(maxl vs))) (S(maxl vs)) u. apply Ug; auto. apply Ui with (Succ (#0)==Succ (#S(maxl vs))==>#0==#S(maxl vs)) 0 t; auto. apply TFFSub_Imp; apply TFFSub_Eq; auto; apply ST_Func; auto. apply TFFSub_Imp; apply TFFSub_Eq; auto. apply nVT_SubTerm; auto. intros C. inversion C. apply In_one in H4. subst t0. apply Hv in H3. absurd (S (maxl vs)<=maxl vs); auto. auto. unfold Succ; auto. apply nVT_SubTerm. intros C. apply Hv in C. absurd (S (maxl vs)<=maxl vs); auto. Qed.
+Theorem Neq_sym: forall t u l, Inf l (t!=u) -> Inf l (u!=t). Proof. intros. apply Contra with (t==u); auto. Qed.
+Hint Resolve Term_Eq_Succ Term_Eq_Succ_inv Neq_sym.
 
+(* convert nat to Term *)
+Fixpoint n2t (i:nat) : Term := match i with 0 => Zero |S i'=>Succ (n2t i') end.
+Theorem n2t_neq: forall i j l, i<>j -> Inf l (n2t i != n2t j). Proof. induction i; intros. simpl. destruct j. contradict H; auto. simpl. apply Ui with (Zero!=Succ (#0)) 0 (n2t j). apply Inf_incl with nil; auto. apply TFFSub_Neg. apply TFFSub_Eq; auto. apply nVT_SubTerm. intros C; inversion C. destruct H4. apply ST_Func; auto. destruct j. simpl. apply Ui with (Succ (#0)!=Zero) 0 (n2t i); auto. apply TFFSub_Neg. apply TFFSub_Eq; auto. apply ST_Func; auto. apply nVT_SubTerm. intros C; inversion C. destruct H4. simpl. apply Contra with (n2t i==n2t j). apply IMp with (Succ (n2t i)==Succ (n2t j)); auto. apply Inf_incl'. apply IHi. contradict H; auto. Qed.
 
+(* fun y x=>f(x,y) *)
+Definition FSwap (f:Func) : Func := FComp f (FProj 1::FProj 0::nil).
+Definition FPlus : Func := FRecu (FProj 1) (FComp FSucc (FProj 0::nil)).
+Definition FPred: Func := FRecu (FComp FZero nil) (FProj 1).
+Definition FMinus: Func := FSwap (FRecu (FProj 1) (FComp FPred (FProj 0::nil))).
+Definition FMult : Func := FRecu (FComp FZero nil) (FComp FPlus (FProj 0::FProj 3::nil)).
+(* If input is 0, then output is 0, otherwise output is 1 *)
+Definition FSign : Func := FRecu (FComp FZero nil) (FComp FSucc (FComp FZero nil::nil)).
+
+Theorem FSwap_WFF: forall f, WFFunc 2 f -> WFFunc 2 (FSwap f). Proof. intros. apply WFF_Comp; auto. apply Forall_forall. intros. destruct H0. subst x; auto. destruct H0. subst x; auto. destruct H0. Qed.
+Theorem FPlus_WFF: WFFunc 2 FPlus. Proof. apply WFF_Recu; auto. apply WFF_Comp; auto. Qed.
+Theorem FPred_WFF: WFFunc 1 FPred. Proof. apply WFF_Recu; auto. Qed. 
+Theorem FMinus_WFF: WFFunc 2 FMinus. Proof. apply FSwap_WFF. apply WFF_Recu; auto. apply WFF_Comp; auto. apply FPred_WFF. Qed.
+Theorem FMult_WFF: WFFunc 2 FMult. Proof. apply WFF_Recu; auto. apply WFF_Comp; auto. apply FPlus_WFF. Qed.
+Theorem FSign_WFF: WFFunc 1 FSign. Proof. apply WFF_Recu; auto. Qed.
+Hint Resolve FSwap FPlus FPred FMinus FMult FSwap_WFF FPlus_WFF FPred_WFF FMinus_WFF FMult_WFF FSign_WFF.
+
+Theorem Zero_WFT: WFTerm Zero. Proof. intros. unfold Zero; auto. Qed.
+Theorem Succ_WFT: forall t, WFTerm t->WFTerm (Succ t). Proof. intros. unfold Succ; auto. Qed.

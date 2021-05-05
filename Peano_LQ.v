@@ -24,8 +24,7 @@ Hint Resolve incl_refl In_cons_l In_cons_r incl_cons incl_trans In_one.
 Inductive Func : Set :=
 |FZero : Func
 |FSucc : Func
-|FCons: nat -> Func
-|FProj : nat -> list Func -> Func
+|FProj : nat -> Func
 |FComp: Func -> list Func -> Func
 |FRecu : Func -> Func -> Func
 .
@@ -33,17 +32,16 @@ Inductive Func : Set :=
 Inductive WFFunc : nat -> Func -> Prop :=
 |WFF_Zero: WFFunc 0 FZero
 |WFF_Succ: WFFunc 1 FSucc
-|WFF_Cons: forall n t, WFFunc n (FCons t)
-|WFF_Proj: forall n i l, i < length l -> Forall (WFFunc n) l -> WFFunc n (FProj i l)
+|WFF_Proj: forall n i, i < n -> WFFunc n (FProj i)
 |WFF_Comp: forall n f l, WFFunc (length l) f -> Forall (WFFunc n) l -> WFFunc n (FComp f l)
 |WFF_Recu: forall n f g, WFFunc n f -> WFFunc (S (S n)) g -> WFFunc n (FRecu f g)
 .
 Hint Constructors WFFunc.
-Fixpoint funcDepth (f:Func) : nat := match f with |FZero => 0 |FSucc => 0 |FCons _ => 0 |FProj _ l => S (maxl (map funcDepth l)) |FComp g l => S (maxl (map funcDepth (g::l))) |FRecu g h => S (max (funcDepth g) (funcDepth h)) end.
-Definition wfFunc: forall f n, {WFFunc n f}+{~WFFunc n f}. intros f. apply (Fix (well_founded_ltof Func funcDepth)) with (P:=fun f=>forall n,{WFFunc n f}+{~WFFunc n f}). clear f. intros f IH n. destruct f. destruct (nat_eq_dec n 0); [subst n; left|right]; auto. contradict n0; inversion n0; auto. destruct (nat_eq_dec n 1); [subst n;left|right]; auto. contradict n0; inversion n0; auto. left; auto. destruct (lt_dec n0 (length l)); [|right]. destruct Forall_dec with (P:=WFFunc n) (l:=l); auto. intros. apply IH. unfold ltof. simpl. apply le_n_S. apply maxl_le. apply in_map_iff; exists x; auto. right. destruct s as [x H]. contradict n1; inversion n1. apply Forall_forall with (x:=x) in H4; auto. contradict n1; inversion n1; auto.
+Fixpoint funcDepth (f:Func) : nat := match f with |FZero => 0 |FSucc => 0 |FProj _ => 0 |FComp g l => S (maxl (map funcDepth (g::l))) |FRecu g h => S (max (funcDepth g) (funcDepth h)) end.
+Definition wfFunc: forall f n, {WFFunc n f}+{~WFFunc n f}. intros f. apply (Fix (well_founded_ltof Func funcDepth)) with (P:=fun f=>forall n,{WFFunc n f}+{~WFFunc n f}). clear f. intros f IH n. destruct f. destruct (nat_eq_dec n 0); [subst n; left|right]; auto. contradict n0; inversion n0; auto. destruct (nat_eq_dec n 1); [subst n;left|right]; auto. contradict n0; inversion n0; auto. destruct (lt_dec n0 n); [left|right]; auto. contradict n1; inversion n1; auto.
   destruct (IH f) with (n:=length l);[| |right]. unfold ltof. simpl; auto. destruct Forall_dec with (P:=WFFunc n) (l:=l); auto. intros. apply IH. unfold ltof. simpl. apply le_n_S. apply le_trans with (maxl (map funcDepth l)); auto. apply maxl_le. apply in_map_iff; exists x; auto. right. destruct s as [x H]. contradict n0. inversion n0. apply Forall_forall with (x:=x) in H4; auto. contradict n0; inversion n0; auto. destruct (IH f1) with (n:=n); [| |right]. unfold ltof. simpl; auto. destruct (IH f2) with (n:=S (S n)); [|left|right]; auto. unfold ltof; simpl; auto. contradict n0; inversion n0; auto. contradict n0; inversion n0; auto. Defined.
-Definition Func_eq_dec: forall f g:Func, {f=g}+{f<>g}. intros f. apply (Fix (well_founded_ltof Func funcDepth)) with (P:=fun f=>forall g,{f=g}+{f<>g}). clear f. intros f IH g. destruct f; destruct g; try (right; discriminate). left; auto. left; auto. destruct (nat_eq_dec n n0); auto. right; contradict n1; inversion n1; auto. destruct (nat_eq_dec n n0); [|right]. subst n0. revert l0. induction l; intros. destruct l0. left; auto. right. intros C; inversion C. destruct l0. right. intros C; inversion C. destruct (IH a) with (g:=f); [| |right]. unfold ltof. simpl; auto. subst f. destruct IHl with l0. intros. apply IH. unfold ltof. apply lt_le_trans with (funcDepth (FProj n l)); auto. simpl; auto. left. inversion e; auto. right. contradict n0. inversion n0; auto. contradict n0. inversion n0; auto. contradict n1. inversion n1; auto.
-  destruct (IH f) with g; [| |right]. unfold ltof. simpl; auto. subst g. cut ({l=l0}+{l<>l0}). intros. destruct H; [subst l0;left|right]; auto. contradict n; inversion n; auto. revert l0. induction l; intros. destruct l0; [left|right]; auto; discriminate. destruct l0. right; discriminate. destruct (IH a) with f0. unfold ltof. simpl; auto. apply le_n_S. apply le_trans with (max (funcDepth a) (maxl (map funcDepth l))); auto. subst f0. destruct IHl with l0. intros. apply IH. unfold ltof. apply lt_le_trans with (funcDepth (FComp f l)); auto. simpl. apply le_n_S. apply Nat.max_le_compat_l. auto. subst l0; left; auto. right. contradict n; inversion n; auto. right. contradict n; inversion n; auto. contradict n; inversion n; auto. destruct (IH f1) with g1. unfold ltof. simpl; auto. subst g1. destruct (IH f2) with g2. unfold ltof. simpl; auto. subst g2; left; auto. right; contradict n; inversion n; auto. right; contradict n; inversion n; auto. Defined.
+Definition Func_eq_dec: forall f g:Func, {f=g}+{f<>g}. intros f. apply (Fix (well_founded_ltof Func funcDepth)) with (P:=fun f=>forall g,{f=g}+{f<>g}). clear f. intros f IH g. destruct f; destruct g; try (right; discriminate). left; auto. left; auto. destruct (nat_eq_dec n n0); [left|right]; auto. contradict n1; inversion n1; auto. destruct (IH f) with g; [| |right]. unfold ltof. simpl; auto. subst g. cut ({l=l0}+{l<>l0}). intros. destruct H; [subst l0;left|right]; auto. contradict n; inversion n; auto. revert l0. induction l; intros. destruct l0; [left|right]; auto; discriminate. destruct l0. right; discriminate. destruct (IH a) with f0. unfold ltof. simpl; auto. apply le_n_S. apply le_trans with (max (funcDepth a) (maxl (map funcDepth l))); auto. subst f0. destruct IHl with l0. intros. apply IH. unfold ltof. apply lt_le_trans with (funcDepth (FComp f l)); auto. simpl. apply le_n_S. apply Nat.max_le_compat_l. auto. subst l0; left; auto. right. contradict n; inversion n; auto. right. contradict n; inversion n; auto. contradict n; inversion n; auto.
+  destruct (IH f1) with g1. unfold ltof. simpl; auto. subst g1. destruct (IH f2) with g2. unfold ltof. simpl; auto. subst g2; left; auto. right; contradict n; inversion n; auto. right; contradict n; inversion n; auto. Defined.
 
 Inductive Term : Set :=
 |Var: nat -> Term
@@ -96,6 +94,7 @@ Definition Ex v f := Neg (Any v (Neg f)).
 (* Declare Scope LQ_scope. *)
 Notation "# n" := (Var n) (at level 80, no associativity) : Peano_scope.
 Notation "f == g" := (Equal f g) (at level 81, no associativity) : Peano_scope.
+Notation "f != g" := (Neg (Equal f g)) (at level 81, no associativity) : Peano_scope.
 Notation "! f" := (Neg f) (at level 82, no associativity) : Peano_scope.
 Notation "f ==> g" := (Imply f g) (at level 85, right associativity) : Peano_scope.
 Notation "f &^ g" := (Land f g) (at level 83, left associativity) : Peano_scope.
@@ -285,7 +284,7 @@ Inductive PAxiom: Formula -> Prop :=
 |PAL5 : forall v f g, ~FreeVar v f -> PAxiom (Any v (f==>g) ==> f ==> Any v g)
 |PAE1 : forall v, PAxiom (#v==#v)
 |PAE2 : forall v x y t tx ty u ux uy, SubTerm v (#x) t tx -> SubTerm v (#x) u ux -> SubTerm v (#y) t ty -> SubTerm v (#y) u uy -> PAxiom (#x==#y ==> tx==ux ==> ty==uy) 
-|PAP1 : forall x, PAxiom (!(Succ (#x) == Zero))
+|PAP1 : forall x, PAxiom (Succ (#x) != Zero)
 |PAP2 : forall x y, PAxiom (Succ (#x) == Succ (#y) ==> #x == #y)
 |PAP3 : forall x f f0 fs, TFFSub x Zero f f0 -> TFFSub x (Succ (#x)) f fs -> PAxiom (f0 ==> Any x (f==>fs) ==> Any x f)
 .
