@@ -236,6 +236,16 @@ Theorem all_pair_spec2: forall f l m z, In z (all_pair f l m) -> exists x y, In 
 Definition maxf: forall (f:T->nat) l, {x|In x l & forall y, In y l->f y<=f x}+{l=nil}. induction l; [right|left]; auto. destruct IHl as [[x H1 H2]|H1]. destruct (le_lt_dec (f a) (f x)). exists x; auto. right; auto. intros. destruct H; auto. subst y; auto. exists a. left; auto. intros. destruct H; auto. subst y; auto. apply le_trans with (f x); auto. apply lt_le_weak; auto. subst l. exists a. left; auto. intros. destruct H. subst a; auto. destruct H. Defined.
 Definition minf: forall (f:T->nat) l, {x|In x l & forall y, In y l->f x<=f y}+{l=nil}. induction l; [right|left]; auto. destruct IHl as [[x H1 H2]|H1]. destruct (le_lt_dec (f a) (f x)). exists a; auto. left; auto. intros. destruct H; auto. subst y; auto. apply le_trans with (f x); auto. exists x.  right; auto. intros. destruct H; auto. subst y; auto. apply lt_le_weak; auto. subst l. exists a. left; auto. intros. destruct H. subst a; auto. destruct H. Defined.
 
+Inductive MapR (R:T->U->Prop) : list T -> list U -> Prop :=
+|MapR_nil: MapR R nil nil
+|MapR_cons: forall l m a b, MapR R l m -> R a b -> MapR R (a::l) (b::m)
+.
+Hint Constructors MapR.
+Theorem MapR_length: forall R l m, MapR R l m -> length l = length m. Proof. intros. induction H; simpl; auto. Qed.
+Theorem MapR_app: forall R l1 l2 m1 m2, MapR R l1 m1 -> MapR R l2 m2 -> MapR R (l1++l2) (m1++m2). Proof. intros. induction H; simpl; auto. Qed.
+Theorem in_MapR_1: forall R l m x, MapR R l m -> In x l -> exists y, R x y /\ In y m. Proof. intros. revert H0. revert x. induction H; intros. destruct H0. destruct H1. subst x. exists b; split; [|left]; auto. destruct (IHMapR x H1) as [y [H2 H3]]. exists y; split; [|right]; auto. Qed.
+Theorem in_MapR_2: forall R l m x, MapR R l m -> In x m -> exists y, R y x /\ In y l. Proof. intros. revert H0. revert x. induction H; intros. destruct H0. destruct H1. subst x. exists a; split; [|left]; auto. destruct (IHMapR x H1) as [y [H2 H3]]. exists y; split; [|right]; auto. Qed.
+
 Variable T_eq_dec: forall x y:T, {x=y}+{x<>y}.
 
 Hint Resolve equiv_refl equiv_sym equiv_trans.
@@ -270,7 +280,7 @@ Definition ubound_sig: forall (l:list nat), {a|forall x, In x l->x<a & forall b,
 Definition ubound (l:list nat): nat := let (n,_,_):= ubound_sig l in n.
 Theorem ubound_Disjoint: forall l m, Disjoint l (map (plus (ubound l)) m). Proof. intros. unfold ubound. destruct (ubound_sig l) as [n H _]. intros x D. destruct D. absurd (x<n); auto. apply le_not_lt. apply in_map_iff in H1. destruct H1 as [y [H2 H3]]. subst x. auto. apply le_plus_l. Qed.
 
-Hint Constructors Swap Perm Add NoDup Sorted ForallR NoRDup Tail Head.
+Hint Constructors Swap Perm Add NoDup Sorted ForallR NoRDup Tail Head MapR.
 Hint Resolve in_eq in_cons Swap_sym Perm'_sym Perm'_refl Perm'_trans Swap_Perm'.
 Hint Resolve Perm'_cons Perm'_cons_Add.
 Hint Resolve Perm_In Perm_length Perm__Perm' Perm_refl Perm_sym Perm_cons.
@@ -283,4 +293,4 @@ Hint Resolve incl_nil_l incl_l_nil remove_incl in_in_remove remove_In2 remove_In
 Hint Resolve count_occ_Add_eq count_occ_Add_neq Perm__count_occ count_occ__Perm nodup_Add1 nodup_Add2 nodup_Perm nodup_incl_min ForallR_Add_rev ForallR_Add ForallR_Perm NoRDup_Add_rev NoRDup_Add NoRDup_Perm NoRDup_app.
 Hint Resolve Sorted_cons_rev Sorted_min_cons Sorted_Perm_uniq Sorted_app.
 Hint Resolve all_pair_spec1 all_pair_spec2 ubound_Disjoint.
-
+Hint Resolve MapR_app in_MapR_1 in_MapR_2.
