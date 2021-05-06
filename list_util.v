@@ -169,10 +169,23 @@ Theorem Tail_In: forall (l:list T) t, Tail t l -> In t l. Proof. intros. inducti
 Theorem Tail_app: forall(t:T) l m, Tail t l -> Tail t (m++l). Proof. intros. induction m; simpl; auto. Qed.
 Theorem Tail_app_rev: forall (t:T) l m, Tail t (l++m) -> m<>nil -> Tail t m. Proof. intros. induction l. auto. inversion H. destruct l. destruct m. contradict H0; auto. inversion H4. inversion H4. auto. Qed.
 
-
 Definition Disjoint: relation (list T):= fun l m =>forall x, ~(In x l /\ In x m).
 Theorem Disjoint_comm: forall (l m:list T), Disjoint l m -> Disjoint m l. Proof. unfold Disjoint. intros. intros D. destruct D. absurd (In x l/\In x m); auto. Qed.
 Theorem Disjoint_In1: forall l m (x:T), Disjoint l m -> In x l -> ~In x m. Proof. intros. intros D. unfold Disjoint in H. absurd (In x l/\In x m); auto. Qed.
+
+Theorem incl_refl: forall (l:list T), incl l l. Proof. intros. intros x H; auto. Qed.
+Theorem In_cons_l: forall x (l:list T), In x (x::l). Proof. intros; left; auto. Qed.
+Theorem In_cons_r: forall x y (l:list T), In y l -> In y (x::l). Proof. intros; right; auto. Qed.
+Theorem incl_cons: forall x (l:list T), incl l (x::l). Proof. intros. intros y H. right; auto. Qed.
+Theorem incl_trans: forall (l m n:list T), incl l m -> incl m n -> incl l n. Proof. intros. intros x H1. apply H0. apply H; auto. Qed.
+Theorem In_one: forall (x y:T), In y (x::nil) -> y=x. Proof. intros. destruct H; auto. destruct H. Qed.
+
+Definition maxl (l:list nat) : nat := fold_right max 0 l.
+Theorem maxl_le: forall x l, In x l -> x <= maxl l. Proof. induction l; intros. destruct H. simpl. destruct H. subst x. apply Nat.le_max_l. apply le_trans with (maxl l); auto. apply Nat.le_max_r. Qed.
+Theorem maxl_In: forall l, In (maxl l) l \/ l=nil. Proof. induction l; intros; auto. left. simpl. destruct IHl. destruct (le_lt_dec a (maxl l)). right. rewrite max_r; auto. left. rewrite max_l; auto. apply lt_le_weak; auto. subst l. left. simpl. rewrite max_l; auto. apply le_O_n. Qed.
+Fixpoint Smaxl (l:list nat) : nat := match l with |nil=>0 |a::l => let y:=Smaxl l in if le_lt_dec y a then S a else y end.
+Theorem Smaxl_lt: forall x l, In x l -> x < Smaxl l. Proof. induction l; intros. destruct H. simpl. destruct H. subst x. destruct (le_lt_dec (Smaxl l) a); auto. destruct (le_lt_dec (Smaxl l) a); auto. apply lt_le_trans with (Smaxl l); auto. Qed.
+Theorem Smaxl_lt2: forall x l, (forall y, In y l->y<x) -> Smaxl l<=x. Proof. induction l; intros; simpl. apply le_O_n. destruct (le_lt_dec (Smaxl l) a). apply H. left; auto. apply IHl. intros. apply H. right; auto. Qed.
 
 (* equiv *)
 Definition equiv (l m:list T) := forall x, In x l <-> In x m.
@@ -294,3 +307,7 @@ Hint Resolve count_occ_Add_eq count_occ_Add_neq Perm__count_occ count_occ__Perm 
 Hint Resolve Sorted_cons_rev Sorted_min_cons Sorted_Perm_uniq Sorted_app.
 Hint Resolve all_pair_spec1 all_pair_spec2 ubound_Disjoint.
 Hint Resolve MapR_app in_MapR_1 in_MapR_2.
+Hint Resolve incl_refl In_cons_l In_cons_r incl_cons incl_trans In_one.
+Hint Resolve maxl_le maxl_In Smaxl_lt Smaxl_lt2.
+
+

@@ -167,7 +167,7 @@ Hint Resolve SubTermSelf SubSelf SubTerm_noFV Sub_noFV TFFSub_noFV TFFSubSelf Su
 Theorem InfMp: forall pre f g, LQInf pre (f==>g) -> LQInf pre f -> LQInf pre g. Proof. intros. apply LQIMp with f pre pre; auto. Qed.
 Theorem ImpRefl: forall pre f, LQInf pre (f==>f). Proof. intros. apply LQIMp with (f==>f==>f) pre pre; auto. apply LQIMp with (f==>(f==>f)==>f) pre pre; auto. Qed.
 Theorem LQInf_incl: forall l m f, LQInf l f -> incl l m -> LQInf m f. Proof. intros. apply LQIMp with f m l; auto. apply ImpRefl. Qed.
-Theorem LQInf_incl1: forall p l f, LQInf l f -> LQInf (p::l) f. Proof. intros. apply LQInf_incl with l; auto. intros x Hx. right; auto. Qed.
+Theorem LQInf_incl1: forall p l f, LQInf l f -> LQInf (p::l) f. Proof. intros. apply LQInf_incl with l; auto. Qed.
 Theorem LQTh_LQInf': forall f, LQTheorem f -> LQInf nil f. Proof. intros. induction H; auto. apply LQIMp with f nil nil; auto. Qed.
 Theorem LQTh_LQInf: forall pre f, LQTheorem f -> LQInf pre f. Proof. intros. apply LQInf_incl with nil. apply LQTh_LQInf'; auto. intros x Hx. destruct Hx. Qed.
 Theorem LQInf_LQTh: forall f, LQInf nil f -> LQTheorem f. Proof. intros. remember nil as l. revert Heql. induction H; intros; auto; subst pre. destruct H. apply incl_l_nil in H0. apply incl_l_nil in H. subst p1 p2. apply LQMp with f; auto. Qed.
