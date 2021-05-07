@@ -7,6 +7,7 @@ Require Import list_util.
 
 Set Implicit Arguments.
 
+Theorem plus_reg_r: forall p n m, n+p=m+p -> n=m. Proof. intros. rewrite plus_comm in H. symmetry in H. rewrite plus_comm in H. apply plus_reg_l in H. auto. Qed.
 Fixpoint pow n a:= match a with |0 => 1 |S a' => n * pow n a' end.
 Theorem pow0: forall n, pow n 0 = 1. Proof. simpl; auto. Qed.
 Theorem pow0n: forall n, n<>0->pow 0 n=0. Proof. intros. destruct n. contradict H; auto. auto. Qed.
@@ -33,7 +34,7 @@ Theorem fact_fold: forall n, fact n = fold_right mult 1 (seq 1 n). Proof. induct
 Lemma fact_nz: forall n, fact n<>0. Proof. induction n; simpl; auto. contradict IHn. destruct (fact n); auto. simpl in IHn. inversion IHn. Qed.
 Lemma fact_S: forall n, fact (S n)=(S n)*fact n. Proof. intros. simpl. auto. Qed.
 
-Hint Resolve pow0 pow0n powS pow1 pow_1n pow_le pow_plus pow_mult pow_mult2 pow_cancel_r pow_cancel_l pow_nz pow_mult_fold_Perm pow_mult_fold_nz pow_mult_fold_app seqS fold_mult_app fold_plus_app mult_fold_plus fold_plus_map fact_fold fact_nz.
+Hint Resolve plus_reg_r pow0 pow0n powS pow1 pow_1n pow_le pow_plus pow_mult pow_mult2 pow_cancel_r pow_cancel_l pow_nz pow_mult_fold_Perm pow_mult_fold_nz pow_mult_fold_app seqS fold_mult_app fold_plus_app mult_fold_plus fold_plus_map fact_fold fact_nz.
 Hint Resolve le_plus_l le_plus_r le_n_S le_S_n le_not_lt lt_not_le lt_le_weak plus_assoc plus_comm mult_assoc mult_comm mult_plus_distr_r mult_plus_distr_l seq_NoDup.
 Definition nat_eq_dec: forall x y:nat, {x=y}+{x<>y}. induction x; intros; destruct y. left; auto. right; auto. right; auto. destruct (IHx y); [subst y; left|right]; auto. Defined.
 

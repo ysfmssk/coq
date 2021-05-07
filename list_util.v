@@ -180,6 +180,11 @@ Theorem incl_cons: forall x (l:list T), incl l (x::l). Proof. intros. intros y H
 Theorem incl_trans: forall (l m n:list T), incl l m -> incl m n -> incl l n. Proof. intros. intros x H1. apply H0. apply H; auto. Qed.
 Theorem In_one: forall (x y:T), In y (x::nil) -> y=x. Proof. intros. destruct H; auto. destruct H. Qed.
 
+Theorem firstn_S: forall i (l:list T) (d:T), i<length l -> firstn (S i) l = firstn i l++nth i l d::nil. Proof. induction i; simpl; intros. destruct l; auto. inversion H. destruct l; auto. inversion H. simpl. f_equal. apply IHi. simpl in H. apply le_S_n; auto. Qed.
+Theorem skipn_S: forall {T:Type} (l:list T) n t, n<length l -> skipn n l=nth n l t::skipn (S n) l. Proof. induction l; intros. inversion H. destruct n. simpl; auto. simpl. apply IHl. apply le_S_n; auto. Qed.
+Theorem combine_app: forall {T U:Type} (l1 l2:list T) (m1 m2:list U), length l1=length m1 -> combine (l1++l2) (m1++m2) = combine l1 m1++combine l2 m2. Proof. induction l1; intros. destruct m1. auto. inversion H. destruct m1. inversion H. simpl. f_equal. apply IHl1. inversion H; auto. Qed.
+Theorem combine_cons: forall {T U:Type} (a:T) (b:U) l m, combine (a::l) (b::m) = (a,b)::combine l m. Proof. intros. auto. Qed.
+
 Definition maxl (l:list nat) : nat := fold_right max 0 l.
 Theorem maxl_le: forall x l, In x l -> x <= maxl l. Proof. induction l; intros. destruct H. simpl. destruct H. subst x. apply Nat.le_max_l. apply le_trans with (maxl l); auto. apply Nat.le_max_r. Qed.
 Theorem maxl_In: forall l, In (maxl l) l \/ l=nil. Proof. induction l; intros; auto. left. simpl. destruct IHl. destruct (le_lt_dec a (maxl l)). right. rewrite max_r; auto. left. rewrite max_l; auto. apply lt_le_weak; auto. subst l. left. simpl. rewrite max_l; auto. apply le_O_n. Qed.
@@ -258,6 +263,12 @@ Theorem MapR_length: forall R l m, MapR R l m -> length l = length m. Proof. int
 Theorem MapR_app: forall R l1 l2 m1 m2, MapR R l1 m1 -> MapR R l2 m2 -> MapR R (l1++l2) (m1++m2). Proof. intros. induction H; simpl; auto. Qed.
 Theorem in_MapR_1: forall R l m x, MapR R l m -> In x l -> exists y, R x y /\ In y m. Proof. intros. revert H0. revert x. induction H; intros. destruct H0. destruct H1. subst x. exists b; split; [|left]; auto. destruct (IHMapR x H1) as [y [H2 H3]]. exists y; split; [|right]; auto. Qed.
 Theorem in_MapR_2: forall R l m x, MapR R l m -> In x m -> exists y, R y x /\ In y l. Proof. intros. revert H0. revert x. induction H; intros. destruct H0. destruct H1. subst x. exists a; split; [|left]; auto. destruct (IHMapR x H1) as [y [H2 H3]]. exists y; split; [|right]; auto. Qed.
+Theorem MapR_combine: forall R l m, MapR R l m -> forall x y, In (x,y) (combine l m) -> R x y. Proof. induction l; intros. inversion H0. inversion H. subst a0 l0 m. simpl in H0. destruct H0. inversion H0; subst a b; auto. apply IHl with m0; auto. Qed.
+Theorem MapR_map: forall {V:Type} (f:V->T) (g:V->U) l (R:T->U->Prop), (forall x, In x l-> R (f x) (g x)) -> MapR R (map f l) (map g l). Proof. induction l; intros; simpl; auto. apply MapR_cons. apply IHl; auto. intros. apply H. right; auto. apply H. left; auto. Qed.
+Theorem MapR_trans: forall (R1 R2:T->U->Prop) l m, (forall x y, In x l->In y m->R1 x y->R2 x y) -> MapR R1 l m -> MapR R2 l m. Proof. induction l; intros. inversion H0; auto. inversion H0. apply MapR_cons. apply IHl. intros. apply H; auto. right; auto. subst m; right; auto. auto. apply H; auto. left; auto. subst m; left; auto. Qed.
+Definition MapR_build: forall (l:list T) (R:T->U->Prop) (H:forall x, In x l->{y:U|R x y}), {m:list U|MapR R l m}. induction l; intros. exists nil. auto. destruct (IHl R) as [m H0]. intros. apply H. right; auto. destruct (H a) as [y H1]. left; auto. exists (y::m); auto. Defined.
+Theorem MapR_nth: forall (R:T->U->Prop) l m i dt du, i<length l -> MapR R l m -> R (nth i l dt) (nth i m du). Proof. induction l; intros. inversion H. inversion H0. subst a0 l0 m. destruct i. simpl; auto. simpl. apply IHl. simpl in H. apply le_S_n in H; auto. auto. Qed.
+Theorem combine_MapR: forall (R:T->U->Prop) l m, length l=length m -> Forall (fun p=>R (fst p) (snd p)) (combine l m) -> MapR R l m. Proof. induction l; intros. destruct m; auto. inversion H. destruct m. inversion H. simpl in H0. inversion H0. apply MapR_cons; auto. Qed.
 
 Variable T_eq_dec: forall x y:T, {x=y}+{x<>y}.
 
@@ -288,6 +299,11 @@ Definition inv_func: forall (f:T->U) l (d:T), (forall x y, In x l->In y l->f x=f
 
 End ListType2.
 
+Theorem MapR_refl: forall {T:Type} (R:T->T->Prop) (l:list T), (forall x, In x l -> R x x) -> MapR R l l. Proof. induction l; intros; auto. apply MapR_nil. apply MapR_cons; auto. apply IHl. intros; apply H. right; auto. apply H; left; auto. Qed.
+Theorem MapR_map2: forall {T1 T2 U1 U2:Type} (R:T2->U2->Prop) (f:T1->T2) (g:U1->U2) l m, MapR (fun x y=>R (f x) (g y)) l m -> MapR R (map f l) (map g m). Proof. induction l; simpl; intros. inversion H; simpl; auto. apply MapR_nil. inversion H; simpl; auto. apply MapR_cons. apply IHl; auto. auto. Qed.
+
+
+
 Definition splits: forall {T:Type} (l: list T), {pl| forall p, l=fst p++snd p <-> In p pl & NoDup pl}. induction l as [|a l]. exists ((nil,nil)::nil). intros; split; intros. destruct p. simpl in H. destruct l. destruct l0. left; auto. inversion H. inversion H. destruct H. subst p. auto. destruct H. apply NoDup_cons; auto. apply NoDup_nil. destruct IHl as [pl H1 Hn]. exists ((nil, a::l)::map (fun p=> (a::fst p, snd p)) pl). intros; split; intros. destruct p as [t u]. simpl in H. destruct t. left. simpl in H. subst u. auto. inversion H. subst a l. right. apply in_map_iff. exists (t0,u). split; auto. apply H1; auto. destruct H. subst p. auto. apply in_map_iff in H. destruct H as [[t u] [H2 H3]]. subst p. simpl. f_equal. apply H1 in H3. subst l; auto. apply NoDup_cons. intros C. apply in_map_iff in C. destruct C as [[x y] [H2 H3]]. inversion H2. apply NoDup_map; auto. intros. destruct x. destruct y. simpl in H2. inversion H2. auto. Defined.
 Definition ubound_sig: forall (l:list nat), {a|forall x, In x l->x<a & forall b, (forall x, In x l->x<b) -> a<=b}. induction l. exists 0; intros. destruct H. apply le_O_n. destruct IHl as [m Ha Hb]. destruct (le_lt_dec m a). exists (S a); intros. destruct H. subst x; auto. apply lt_le_trans with m; auto. apply H. left; auto. exists m; intros; auto. destruct H; auto. subst x; auto. apply Hb. intros. apply H. right; auto. Defined.
 Definition ubound (l:list nat): nat := let (n,_,_):= ubound_sig l in n.
@@ -306,8 +322,8 @@ Hint Resolve incl_nil_l incl_l_nil remove_incl in_in_remove remove_In2 remove_In
 Hint Resolve count_occ_Add_eq count_occ_Add_neq Perm__count_occ count_occ__Perm nodup_Add1 nodup_Add2 nodup_Perm nodup_incl_min ForallR_Add_rev ForallR_Add ForallR_Perm NoRDup_Add_rev NoRDup_Add NoRDup_Perm NoRDup_app.
 Hint Resolve Sorted_cons_rev Sorted_min_cons Sorted_Perm_uniq Sorted_app.
 Hint Resolve all_pair_spec1 all_pair_spec2 ubound_Disjoint.
-Hint Resolve MapR_app in_MapR_1 in_MapR_2.
+Hint Resolve MapR_app in_MapR_1 in_MapR_2 MapR_refl MapR_map MapR_map2 MapR_trans combine_MapR.
 Hint Resolve incl_refl In_cons_l In_cons_r incl_cons incl_trans In_one.
-Hint Resolve maxl_le maxl_In Smaxl_lt Smaxl_lt2.
+Hint Resolve firstn_S skipn_S combine_app combine_cons maxl_le maxl_In Smaxl_lt Smaxl_lt2.
 
 

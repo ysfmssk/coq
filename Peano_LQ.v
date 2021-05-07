@@ -78,6 +78,7 @@ Hint Constructors WFFormula.
 Definition Land (f g:Formula) := Neg (Imply f (Neg g)).
 Definition Lor (f g:Formula) := Imply (Neg f) g.
 Definition Ex v f := Neg (Any v (Neg f)).
+Fixpoint Imps (l:list Formula) (c:Formula) : Formula := match l with nil => c |p::l' => Imply p (Imps l' c) end.
 
 (* Declare Scope LQ_scope. *)
 Notation "# n" := (Var n) (at level 80, no associativity) : Peano_scope.
@@ -260,10 +261,11 @@ Theorem nFV_TFFSub: forall v t f, ~FreeVar v f -> TFFSub v t f f. Proof. intros.
 Theorem TFFSub_swap: forall v v' f g, TFFSub v (Var v') f g -> ~FreeVar v' f -> TFFSub v' (Var v) g f. Proof. induction f; intros. inversion H. inversion H1. subst t t0 g. apply TFFSub_intro. apply Sub_Eq; apply SubTerm_swap; auto. intros; auto. inversion H. inversion H1. subst f0 g. apply TFFSub_Neg. apply IHf; auto. apply TFFSub_intro; auto. intros. apply H2 in H3. contradict H3; auto. inversion H. inversion H1. subst f0 f3 g. apply TFFSub_Imp. apply IHf1; auto. apply TFFSub_intro; auto. intros. apply H2 in H3; auto. apply IHf2; auto. apply TFFSub_intro; auto. intros. apply H2 in H3; auto. inversion H. inversion H1. subst n f0 g. apply TFFSub_intro; auto. intros. contradict H0. apply BBR__FreeVar with i; auto.
   subst n f0 g. destruct (nat_eq_dec i v'). subst i. replace g0 with f; auto. destruct (sub_sig v (Var v') f) as [g H3 H4]. rewrite H4; auto. apply H4. apply nFV_Sub. assert (~BBR v v' (Any v' f)); auto. apply TFFSub_Any2; auto. apply IHf. inversion H. apply TFFSub_intro; auto. intros. apply H4 in H6; auto. contradict H0; auto. Qed. 
 Theorem TFFSub_refl: forall v f, TFFSub v (Var v) f f. Proof. intros. apply TFFSub_intro; auto. intros. inversion H. auto. Qed.
+Theorem TFFSub_Imps: forall v t l1 c1 l2 c2, MapR (TFFSub v t) l1 l2 -> TFFSub v t c1 c2 -> TFFSub v t (Imps l1 c1) (Imps l2 c2). Proof. induction l1; intros. inversion H. simpl; auto. inversion H. subst a0 l1 l2. simpl. apply TFFSub_Imp; auto. Qed.
 Theorem TFFSub_step: forall v u t1 t2, v<>u -> ~VarTerm u t1 -> ~VarTerm v t2 -> forall f f1 f2 g, TFFSub v t1 f f1 -> TFFSub u t2 f1 g -> TFFSub u t2 f f2 -> TFFSub v t1 f2 g. Proof. intros v u t1 t2 Hv Ht1 Ht2. induction f; intros. inversion H. inversion H2. subst t t0 f1. clear H H2. inversion H0. inversion H. subst s2 u2 g. clear H0 H. inversion H1. inversion H. subst s1 u1 f2. clear H H1. apply TFFSub_intro; auto. apply Sub_Eq. apply SubTerm_step with u t2 s2 s0; auto. apply SubTerm_step with u t2 u2 u0; auto.
   apply TFFSub_Neg_inv in H. destruct H; subst f1. apply TFFSub_Neg_inv in H0. destruct H0; subst g. apply TFFSub_Neg_inv in H1. destruct H1; subst f2. apply TFFSub_Neg. apply IHf with (f2:=sub u t2 f) (g:=sub u t2(sub v t1 f)) in H2; auto. apply TFFSub_Imp_inv in H. destruct H; subst f0. destruct H2. apply TFFSub_Imp_inv in H0. destruct H0; subst g. destruct H3. apply TFFSub_Imp_inv in H1. destruct H1; subst f3. destruct H4. apply TFFSub_Imp. eapply IHf1; eauto. eapply IHf2; eauto. destruct (nat_eq_dec v n). subst n. apply TFFSub_Any_inv1 in H. subst f1. apply TFFSub_Any_inv2 in H0; auto. destruct H0; subst g. apply TFFSub_Any_inv2 in H1; auto. destruct H1; subst f2. apply TFFSub_Any1.
   apply TFFSub_Any_inv2 in H; auto. destruct H; subst f1. destruct H2. destruct (nat_eq_dec u n). subst n. apply TFFSub_Any_inv1 in H1. subst f2. apply TFFSub_Any_inv1 in H0; auto. subst g. apply TFFSub_Any2; auto. destruct H2. assert (f=sub v t1 f). unfold sub. destruct (sub_sig v t1 f); auto. rewrite <- H3 in H0. assert (g=f2). eapply TFFSub_unique; eauto. subst f2. apply nFV_TFFSub. apply TFFSub_Any_inv2 in H0; auto. destruct H0; subst g. destruct H4. apply nFV_Any2. apply Sub_nFV2 with u t2 f; auto. apply TFFSub_Any_inv2 in H0; auto. destruct H0; subst g. destruct H3. apply TFFSub_Any_inv2 in H1; auto. destruct H1; subst f2. destruct H4. apply TFFSub_Any2; auto. eapply IHf; eauto. Qed. 
-Hint Resolve nFV_TFFSub TFFSub_swap TFFSub_refl TFFSub_step.
+Hint Resolve nFV_TFFSub TFFSub_swap TFFSub_Imps TFFSub_refl TFFSub_step.
 
 Definition newVar (vs:list nat) (ts:list Term) (fs:list Formula) := Smaxl (vs++flat_map varTerm ts++flat_map varFormula fs).
 Theorem newVar_nVT: forall i t vs ts fs, newVar vs ts fs <= i -> In t ts -> ~VarTerm i t. Proof. intros. contradict H. apply lt_not_le. apply Smaxl_lt. apply in_or_app. right. apply in_or_app. left. apply in_flat_map. exists t; split; auto. unfold varTerm. destruct (varTerm_sig t). apply i0; auto. Qed.
@@ -271,7 +273,6 @@ Theorem newVar_nVF: forall i f vs ts fs, newVar vs ts fs <= i -> In f fs -> ~Var
 Theorem newVar_nVar: forall i vs ts fs, newVar vs ts fs <= i -> ~In i vs. Proof. intros. contradict H. apply lt_not_le. apply Smaxl_lt. apply in_or_app; auto. Qed.
 Hint Resolve newVar_nVT newVar_nVF newVar_nVar.
 
-Fixpoint Imps (l:list Formula) (c:Formula) : Formula := match l with nil => c |p::l' => p ==> Imps l' c end.
 Fixpoint with_idx' {T:Type} (l:list T) (s:nat) : list (T*nat) := match l with nil => nil |a::l' => (a,s)::with_idx' l' (S s) end.
 Definition with_idx {T:Type} (l:list T) : list (T*nat) := with_idx' l 0.
 
@@ -310,24 +311,27 @@ Hint Resolve IMp.
 Theorem Inf__PTheorem: forall f, Inf nil f -> PTheorem f. Proof. remember nil as l. intros. revert Heql. induction H; intros; auto. subst l; destruct H. subst l. apply PTMp with f; auto. Qed.
 Theorem Imp_refl: forall l f, Inf l (f==>f). Proof. intros. apply IMp with (f==>f==>f); auto. apply IMp with (f==>(f==>f)==>f); auto. Qed.
 Theorem Imp_intro: forall l f g, Inf l f -> Inf l (g==>f). Proof. intros. apply IMp with f; auto. Qed.
-Theorem Imp_trans: forall l f g h, Inf l (f==>g) -> Inf l (g==>h) -> Inf l (f==>h). Proof. intros. apply IMp with (f==>g); auto. apply IMp with (f==>g==>h); auto. apply Imp_intro; auto. Qed.
 Theorem Inf_incl: forall f l m, incl l m -> Inf l f -> Inf m f. Proof. intros. induction H0; auto. apply IMp with f; auto. apply IHInf1. apply incl_trans with l; auto. apply IHInf2. apply incl_trans with l; auto. apply IMP with (Any v f) l l; auto. apply Imp_refl. Qed.
 Theorem Inf_incl': forall f p l, Inf l f -> Inf (p::l) f. Proof. intros. apply Inf_incl with l; auto. Qed.
 Theorem Inf_close: forall f l p, Inf l f -> (forall v, ~FreeVar v p) -> Inf (p::l) f. Proof. intros. induction H; auto. apply IMP with f (p::m) (p::n); auto. intros x Hx. destruct Hx; [subst x|]; auto. intros x Hx. destruct Hx; [subst x|]; auto. apply IUg; auto. intros. destruct H2; [subst p0|]; auto. Qed.
 Theorem PTheorem__Inf: forall f l, PTheorem f -> Inf l f. Proof. intros. apply Inf_incl with nil; auto. induction H; auto. apply IMp with f; auto. Qed.
-Hint Resolve Inf__PTheorem PTheorem__Inf Inf_close Imp_refl Imp_intro Imp_trans Inf_incl Inf_incl'.
+Hint Resolve Inf__PTheorem PTheorem__Inf Inf_close Imp_refl Imp_intro Inf_incl Inf_incl'.
 
 Theorem Deduction': forall p l f, Inf l f -> Inf (remove Formula_eq_dec p l) (p==>f). Proof. intros. induction H; auto. apply remove_In3 with (T_eq_dec:=Formula_eq_dec) (a:=p) in H. destruct H. subst f; auto. auto. apply IMP with (p==>f) (remove Formula_eq_dec p l) (remove Formula_eq_dec p n); auto. apply IMP with (p==>f==>g) nil (remove Formula_eq_dec p m); auto. destruct (in_dec Formula_eq_dec p l) as [Hp|Hp]. apply IMp with (Any v (p==>f)); auto. apply IUg; auto. intros. apply H. apply remove_In2 in H1; auto. rewrite notin_remove; auto. Qed.
 Theorem Deduction: forall p l m f, Add p l m -> Inf m f -> Inf l (p==>f). Proof. intros. apply Inf_incl with (remove Formula_eq_dec p m). intros x Hx. apply Add_in with (x:=x) in H. assert (In x m). apply remove_In2 in Hx; auto. apply H in H1. destruct H1; auto. subst x. contradict Hx. apply remove_In. apply Deduction'; auto. Qed.
 Theorem Ded: forall p l f, Inf (p::l) f -> Inf l (p==>f). Proof. intros. apply Deduction with (m:=p::l); auto. Qed.
 Hint Resolve Deduction Ded.
 
+Theorem Imp_trans: forall l f g h, Inf l (f==>g) -> Inf l (g==>h) -> Inf l (f==>h). Proof. intros. apply Ded. apply IMp with g; auto. apply IMp with f; auto. Qed.
+Theorem Imp_swap: forall l f g h, Inf l (f==>g==>h) -> Inf l (g==>f==>h). Proof. intros. apply Ded. apply Ded. apply IMp with g; auto. apply IMp with f; auto. Qed.
 Theorem Absurd: forall l f g, Inf l f -> Inf l (!f) -> Inf l g. Proof. intros. apply IMp with f; auto. apply IMp with (!g==>!f); auto. Qed.
 Theorem Contra: forall l f g, Inf ((!f)::l) g -> Inf ((!f)::l) (!g) -> Inf l f. Proof. intros. apply IMp with (f==>f); auto. apply IMp with (!f==>!(f==>f)); auto. apply Ded. apply Absurd with g; auto. Qed.
 Theorem Neg_elim: forall l f, Inf l (!(!f)) -> Inf l f. Proof. intros. apply IMp with (f==>f); auto. apply IMp with (!f==>!(f==>f)); auto. apply IMp with (!(!(f==>f))==>!(!f)); auto. Qed.
 Theorem Neg_intro: forall l f, Inf l f -> Inf l (!(!f)). Proof. intros. apply Contra with f; auto. apply Neg_elim. auto. Qed.
-Hint Resolve Imp_trans Absurd Contra Neg_elim Neg_intro.
+Hint Resolve Imp_trans Imp_swap Absurd Contra Neg_elim Neg_intro.
 
+Theorem Imps_imply: forall p l c, Inf p (Imps l c) -> (forall f, In f l->Inf p f) -> Inf p c. Proof. induction l; intros. auto. simpl in H. apply IHl. apply IMp with a; auto. intros. apply H0. right; auto. Qed.
+Theorem Imps_Ded: forall l p f, Inf (l++p) f <-> Inf p (Imps l f). Proof. induction l; intros. simpl. split; intros; auto. split; intros. simpl. apply Ded. apply IHl. apply Inf_incl with ((a::l)++p); auto. intros x Hx. apply in_or_app. destruct Hx. subst x. auto. apply in_app_or in H0. destruct H0; auto. simpl. apply IMp with a; auto. apply Inf_incl with (l++p); auto. apply IHl. simpl in H. clear -H. revert H. revert p. induction l; intros; auto. simpl in H. simpl. apply Ded. apply IHl. apply IMp with a0; auto. Qed.
 Theorem Bi_imp: forall l f g, Inf l (f==>g) -> Inf l (!f==>g) -> Inf l g. Proof. intros. apply Contra with f; auto. apply IMp with (!g); auto. apply IMp with (!f==>(!(!g))); auto. apply Imp_trans with g; auto. apply IMp with (!g); auto. apply IMp with (!(!f)==>!(!g)); auto. apply Imp_trans with f; auto. apply Imp_trans with g; auto. Qed.
 Theorem Or_intro1: forall l f g, Inf l f -> Inf l (f|^g). Proof. intros. apply Ded. apply Absurd with f; auto. Qed.
 Theorem Or_intro2: forall l f g, Inf l g -> Inf l (f|^g). Proof. intros. unfold Lor. auto. Qed.
@@ -335,7 +339,7 @@ Theorem Or_elim: forall l f g h, Inf l (f==>h) -> Inf l (g==>h) -> Inf l (f|^g) 
 Theorem And_intro: forall l f g, Inf l f -> Inf l g -> Inf l (f&^g). Proof. intros. apply Contra with g; auto. apply IMp with f; auto. Qed.
 Theorem And_elim1: forall l f g, Inf l (f&^g) -> Inf l f. Proof. intros. apply Contra with (f==>!g); auto. apply Ded. apply Absurd with f; auto. Qed.
 Theorem And_elim2: forall l f g, Inf l (f&^g) -> Inf l g. Proof. intros. apply Contra with (f==>!g); auto. Qed.
-Hint Resolve Bi_imp Or_intro1 Or_intro2 Or_elim And_intro And_elim1 And_elim2.
+Hint Resolve Imps_imply Bi_imp Or_intro1 Or_intro2 Or_elim And_intro And_elim1 And_elim2.
 
 Theorem Ui: forall l f v, Inf l (Any v f) -> forall t g, TFFSub v t f g -> Inf l g. Proof. intros. apply IMp with (Any v f); auto. apply IAx. apply PAL4 with t; auto. Qed.
 Theorem Eg: forall l g, Inf l g -> forall v t f, TFFSub v t f g -> Inf l (Ex v f). Proof. intros. unfold Ex. apply Contra with g; auto. apply Ui with (!f) v t; auto. Qed.
@@ -355,12 +359,12 @@ Theorem Ex_swap: forall v v' f l, Inf l (Ex v (Ex v' f)) -> Inf l (Ex v' (Ex v f
 Theorem ExAny__AnyEx: forall v u f l, Inf l (Ex v (Any u f)) -> Inf l (Any u (Ex v f)). Proof. intros. apply IMP with (Ex v (Any u f)) nil l; auto. clear H. apply Ded. apply Ei' with (Any u f) v; auto. apply Inf_incl'. apply Ded. apply Ug. apply Eg_refl. apply Ui_refl with u; auto. intros. apply In_one in H. subst p; auto. intros. apply In_one in H. subst p; auto. Qed.
 Hint Resolve Ex_rename Any_swap Ex_swap ExAny__AnyEx.
 
-Theorem Imp_dist: forall pre v f g, Inf pre (Any v (f==>g)) -> Inf pre (Any v f==>Any v g). Proof. intros. apply IMP with (Any v (f==>g)) nil pre; auto. clear H. apply Ded. apply Ded. apply Ug. apply IMp with f. apply Ui_refl with v; auto. apply Ui_refl with v; auto. intros. destruct H. subst p; auto. destruct H. subst p; auto. destruct H. Qed.
+Theorem AnyImp_dist: forall pre v f g, Inf pre (Any v (f==>g)) -> Inf pre (Any v f==>Any v g). Proof. intros. apply IMP with (Any v (f==>g)) nil pre; auto. clear H. apply Ded. apply Ded. apply Ug. apply IMp with f. apply Ui_refl with v; auto. apply Ui_refl with v; auto. intros. destruct H. subst p; auto. destruct H. subst p; auto. destruct H. Qed.
 Theorem AnyAnd_dist1: forall pre v f g, Inf pre (Any v f &^ Any v g) -> Inf pre (Any v (f &^ g)). Proof. intros. apply IMP with (Any v f &^ Any v g) nil pre; auto. apply Ded. clear H. apply Ug. apply And_intro. apply Ui_refl with v. eapply And_elim1; eauto. apply Ui_refl with v. eapply And_elim2; eauto. intros. apply In_one in H. subst p. auto. Qed. 
 Theorem AnyAnd_dist2: forall pre v f g, Inf pre (Any v (f &^ g)) -> Inf pre (Any v f &^ Any v g). Proof. intros. apply And_intro; apply IMP with (Any v (f&^g)) nil pre; auto; apply Ded; apply Ug. apply And_elim1 with g. apply Ui_refl with v; auto. intros. apply In_one in H0. subst p; auto. apply And_elim2 with f. apply Ui_refl with v; auto. intros. apply In_one in H0. subst p; auto. Qed.
 Theorem AnyOr_dist1: forall pre v f g, Inf pre (Any v f |^ Any v g) -> Inf pre (Any v (f |^ g)). Proof. intros. apply IMP with (Any v f |^ Any v g) nil pre; auto. apply Ded. apply Ug. apply Or_elim with (Any v f) (Any v g); auto; apply Ded; [apply Or_intro1| apply Or_intro2]; apply Ui_refl with v; auto. intros. apply In_one in H0. subst p; auto. Qed.
 Theorem ExAnd_dist1: forall pre v f g, Inf pre (Ex v (f &^g)) -> Inf pre (Ex v f &^ Ex v g). Proof. intros. apply IMP with (Ex v (f&^g)) nil pre; auto. clear H. apply Ded. apply Ei' with (f&^g) v; auto. apply Inf_incl'. apply Ded. apply And_intro. apply Eg_refl. apply And_elim1 with g; auto. apply Eg_refl. apply And_elim2 with f; auto. intros. apply In_one in H. subst p; auto. Qed.
 Theorem ExOr_dist1: forall pre v f g, Inf pre (Ex v (f |^g)) -> Inf pre (Ex v f |^ Ex v g). Proof. intros. apply IMP with (Ex v (f|^g)) nil pre; auto. clear H. apply Ded. apply Ei' with (f|^g) v; auto. apply Inf_incl'. apply Ded. apply Or_elim with f g; auto. intros. apply In_one in H; subst p; auto. Qed.
 Theorem ExOr_dist2: forall pre v f g, Inf pre (Ex v f |^ Ex v g) -> Inf pre (Ex v (f |^g)). Proof. intros. apply IMP with (Ex v f|^Ex v g) nil pre; auto. clear H. apply Ded. apply Or_elim with (Ex v f) (Ex v g); auto; apply Inf_incl'; apply Ded. apply Ei' with f v; auto. intros. apply In_one in H; subst p; auto. apply Ei' with g v; auto. intros. apply In_one in H; subst p; auto. Qed.
-Hint Resolve Imp_dist AnyAnd_dist1 AnyAnd_dist2 AnyOr_dist1 ExAnd_dist1 ExOr_dist1 ExOr_dist2.
+Hint Resolve AnyImp_dist AnyAnd_dist1 AnyAnd_dist2 AnyOr_dist1 ExAnd_dist1 ExOr_dist1 ExOr_dist2.
 
