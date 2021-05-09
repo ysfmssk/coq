@@ -1,4 +1,4 @@
-all:	list_util.vo nat_theory.vo polynomial.vo combi.vo ModEq.vo LP.vo RegExp.vo LQ.vo FSA.vo Peano_LQ.vo Peano_Func.vo
+all:	list_util.vo nat_theory.vo polynomial.vo combi.vo ModEq.vo LP.vo RegExp.vo LQ.vo FSA.vo Peano_LQ.vo Peano_Func.vo Peano_rfunc.vo
 
 list_util.vo:	list_util.v
 	coqc list_util.v
@@ -30,8 +30,11 @@ RegExp.vo:	RegExp.v FSA.vo list_util.vo
 Peano_LQ.vo:	Peano_LQ.v list_util.vo
 	coqc Peano_LQ.v
 
-Peano_Func.vo:	Peano_Func.v Peano_LQ.vo
+Peano_Func.vo:	Peano_Func.v list_util.vo Peano_LQ.vo
 	coqc Peano_Func.v
+
+Peano_rfunc.vo:	Peano_rfunc.v list_util.vo Peano_LQ.vo Peano_Func.vo
+	coqc Peano_rfunc.v
 
 .PHONY: clean
 clean:
