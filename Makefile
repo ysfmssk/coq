@@ -30,10 +30,10 @@ RegExp.vo:	RegExp.v FSA.vo list_util.vo
 Peano_LQ.vo:	Peano_LQ.v list_util.vo
 	coqc Peano_LQ.v
 
-Peano_Func.vo:	Peano_Func.v list_util.vo Peano_LQ.vo
+Peano_Func.vo:	Peano_Func.v list_util.vo ModEq.vo Peano_LQ.vo
 	coqc Peano_Func.v
 
-Peano_rfunc.vo:	Peano_rfunc.v list_util.vo Peano_LQ.vo Peano_Func.vo
+Peano_rfunc.vo:	Peano_rfunc.v list_util.vo ModEq.vo Peano_LQ.vo Peano_Func.vo
 	coqc Peano_rfunc.v
 
 .PHONY: clean
