@@ -1,4 +1,4 @@
-all:	list_util.vo nat_theory.vo polynomial.vo combi.vo ModEq.vo LP.vo RegExp.vo LQ.vo FSA.vo Peano_LQ.vo Peano_Func.vo Peano_rfunc.vo Peano_Godel.vo
+all:	list_util.vo nat_theory.vo polynomial.vo combi.vo ModEq.vo LP.vo RegExp.vo LQ.vo FSA.vo Peano_LQ.vo Peano_Func.vo Peano_rfunc.vo Peano_Godel.vo Carmichael.vo
 
 list_util.vo:	list_util.v
 	coqc list_util.v
@@ -11,6 +11,9 @@ combi.vo:	combi.v ModEq.vo list_util.vo
 
 nat_theory.vo:	nat_theory.v ModEq.vo list_util.vo combi.vo
 	coqc nat_theory.v
+
+Carmichael.vo:	Carmichael.v ModEq.vo list_util.vo combi.vo
+	coqc Carmichael.v
 
 ModEq.vo:	ModEq.v list_util.vo
 	coqc ModEq.v
