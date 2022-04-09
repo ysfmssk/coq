@@ -50,6 +50,7 @@ Theorem Perm'__Perm : forall l m, Perm' l m -> Perm l m. Proof. intros. inductio
 Hint Resolve Add_dual Perm_Add_inv Perm_trans Perm'__Perm.
 
 Theorem Perm_rev: forall l, Perm l (rev l). Proof. induction l; simpl; auto. apply Perm_Add with a l (rev l); auto. generalize (rev l) as m. induction m; simpl; auto. Qed.
+Theorem Perm_nil_eq: forall l, Perm nil l -> l=nil. Proof. intros. destruct l; auto. apply Perm_length in H. inversion H. Qed.
 Theorem Perm_one: forall (a:T) l, Perm (a::nil) l -> l=a::nil. Proof. intros. inversion H. inversion H1. subst l0 a0 l1 ma la. inversion H0. subst m. inversion H2; auto. inversion H4. inversion H7. Qed.
 Theorem app_Add: forall (a:T) l la m, Add a l la -> Add a (l++m) (la++m). Proof. intros. induction H; simpl; auto. Qed.
 Theorem Perm_app_swap: forall l m, Perm (l++m) (m++l). Proof. induction l; simpl; intros. rewrite app_nil_r; auto. apply Perm_Add with a (l++m) (m++l); auto. induction m; simpl; auto. Qed.
@@ -315,7 +316,7 @@ Hint Resolve in_eq in_cons Swap_sym Perm'_sym Perm'_refl Perm'_trans Swap_Perm'.
 Hint Resolve Perm'_cons Perm'_cons_Add.
 Hint Resolve Perm_In Perm_length Perm__Perm' Perm_refl Perm_sym Perm_cons.
 Hint Resolve Add_insert Add_dual Perm_Add_inv Perm_trans Perm'__Perm.
-Hint Resolve Perm_rev Perm_one app_Add Perm_app_swap Perm_app Perm_app_rev NoDup_incl_Perm NoDup_incl_each_Perm count_occ_Add_eq count_occ_Add_neq Perm__count_occ count_occ__Perm.
+Hint Resolve Perm_rev Perm_nil_eq Perm_one app_Add Perm_app_swap Perm_app Perm_app_rev NoDup_incl_Perm NoDup_incl_each_Perm count_occ_Add_eq count_occ_Add_neq Perm__count_occ count_occ__Perm.
 Hint Resolve partition_Perm filter_app_Perm fold_right_Perm filter_Add1 filter_Add2 filter_Perm filter_Forall filter_None filter_ord filter_and.
 Hint Resolve filter_app filter_NoDup filter_equiv dec2b_true dec2b_false Rpair_list Forall_imp Forall_incl.
 Hint Resolve NoDup_incl_length NoDup_map_inv NoDup_map NoDup_flat_map NoDup_repeat NoDup_Perm NoDup_app_rev map_Add Perm_map Perm_map_inv filter_map flat_map_app Perm_flat_map map_repeat.
